@@ -4,6 +4,8 @@ S. Sysala, M. Béreš, S. Bérešová, T. Luber: Advanced continuation and itera
 
 S. Sysala, M. Béreš, S. Bérešová, J. Haslinger, J. Kružík, T. Luber: Convex Optimization Problems Inspired by Geotechnical Stability Analysis. Submitted in 2025, http://arxiv.org/abs/2312.12170.
 
+J. Karátson, S. Sysala, M. Béreš: Quasi-Newton iterative solution approaches for nonsmooth elasto-plastic problems. CAMWA 178, 61-80, 2025. 
+
 S. Sysala: Advanced Continuation Methods for Limit Load and Shear Strength Reduction Methods. In P. Iványi, J. Kruis, B.H.V. Topping, (Editors), "Proceedings of the Twelfth International Conference on Engineering Computational Technology", Civil-Comp Press, Edinburgh, UK, Online volume: CCC 8, Paper 9.2, 2024, doi:10.4203/ccc.8.9.2
 
 S. Sysala, F. Tschuchnigg, E. Hrubešová, Z. Michalec: Optimization variant of the shear strength reduction method and its usage for stability of embankments with unconfined seepage. Computers and Structures 281, 2023, 107033. 
