@@ -1,14 +1,27 @@
 These codes are focused on the solution of slope stability problems in 2D and 3D by the shear strength reduction (SSR) and limit load methods. The presented solution concept build on Davis' modifications of the methods, standard finite elements and advanced continuation techniques combined with Newton-like solvers. In particular, one can choose DAVIS A, B or C approach, P1 or P2 elements and different continutation techniques. The available folders contain various 2D and 3D problems with either homogeneous or heterogeneous geometries. The used methods and algorithms have been developed within the following papers:
+
 S. Sysala, M. Béreš, S. Bérešová, T. Luber: Advanced continuation and iterative methods for slope stability analysis in 3D. Submitted in 2025.
+
 S. Sysala, M. Béreš, S. Bérešová, J. Haslinger, J. Kružík, T. Luber: Convex Optimization Problems Inspired by Geotechnical Stability Analysis. Submitted in 2025, http://arxiv.org/abs/2312.12170.
+
 S. Sysala: Advanced Continuation Methods for Limit Load and Shear Strength Reduction Methods. In P. Iványi, J. Kruis, B.H.V. Topping, (Editors), "Proceedings of the Twelfth International Conference on Engineering Computational Technology", Civil-Comp Press, Edinburgh, UK, Online volume: CCC 8, Paper 9.2, 2024, doi:10.4203/ccc.8.9.2
+
 S. Sysala, F. Tschuchnigg, E. Hrubešová, Z. Michalec: Optimization variant of the shear strength reduction method and its usage for stability of embankments with unconfined seepage. Computers and Structures 281, 2023, 107033. 
+
 S. Sysala, E. Hrubešová, Z. Michalec, F. Tschuchnigg: Optimization and variational principles for the shear strength reduction method. International Journal for Numerical and Analytical Methods in Geomechanics 45, 2021, pages 2388-2407.
+
 J. Haslinger, S. Repin, S. Sysala: Inf-sup conditions on convex cones and applications to limit load analysis. Mathematics and Mechanics of Solids 24, 2019, pages 3331-3353.
+
 M. Čermák, S. Sysala, J. Valdman: Efficient and flexible MATLAB implementation of 2D and 3D elastoplastic problems. Applied Mathematics and Computation 355, 2019, pages 595-614.
+
 S. Sysala, M. Čermák, T. Ligurský: Subdifferential-based implicit return-mapping operators in Mohr-Coulomb plasticity. ZAMM 97, 2017, pages 1502-1523.
+
 S. Sysala, M. Čermák, T. Koudelka, J. Kruis, J. Zeman, R. Blaheta: Subdifferential-based implicit return-mapping operators in computational plasticity. ZAMM 96, 2016, pages 1318-1338.
+
 J. Haslinger, S. Repin, S. Sysala: Guaranteed and computable bounds of the limit load for variational problems with linear growth energy functionals. Applications of Mathematics 61, 2016, pages 527-564.
+
 J. Haslinger, S. Repin, S. Sysala: A reliable incremental method of computing the limit load in deformation plasticity based on compliance: Continuous and discrete setting. Journal of Computational and Applied Mathematics 303, 2016, pages 156-170.
+
 S. Sysala, J. Haslinger, I. Hlaváček, M. Čermák: Discretization and numerical realization of contact problems for elastic-perfectly plastic bodies. PART I - discretization, limit analysis. ZAMM 95, 2015, pages 333-353.
+
 M. Čermák, J. Haslinger, T. Kozubek, S. Sysala: Discretization and numerical realization of contact problems for elastic-perfectly plastic bodies. PART II - numerical realization, limit analysis. ZAMM 95, 2015, pages 1348-1371.
