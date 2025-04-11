@@ -44,7 +44,7 @@ Each script corresponds to a different setting (2D/3D, homogeneous/heterogeneous
 
 ---
 
-### 2. AGMG Usage (Optional)
+### 2. AGMG Usage
 
 AGMG usage is controlled by this flag inside each script:
 
@@ -53,7 +53,11 @@ is_agmg_present = 1;
 addpath('agmg'); % Make sure this folder exists and contains AGMG
 ```
 
-If AGMG is not available (`is_agmg_present = 0`), the code defaults to an **incomplete Cholesky preconditioner**, which is slower and less scalable.
+If AGMG is not available set
+```matlab
+is_agmg_present = 0;
+```
+The code defaults to an **incomplete Cholesky preconditioner**, which is slower and less scalable.
 
 To use a **direct solver** instead of iterative GMRES:
 
@@ -94,7 +98,7 @@ These codes are focused on the solution of slope stability problems in 2D and 3D
 
 
 ---
-## 📝 Citation
+## 📝 References
 
 The used methods and algorithms have been developed within the following papers:
 
