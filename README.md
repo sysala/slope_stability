@@ -1,4 +1,102 @@
-These codes are focused on the solution of slope stability problems in 2D and 3D by the shear strength reduction (SSR) and limit load methods. The presented solution concept build on Davis' modifications of the methods, standard finite elements and advanced continuation techniques combined with Newton-like solvers. In particular, one can choose DAVIS A, B or C approach, P1 or P2 elements and different continutation techniques. The available folders contain various 2D and 3D problems with either homogeneous or heterogeneous geometries and will be completed stepwisely. The used methods and algorithms have been developed within the following papers:
+# Slope Stability Using LL and SSR Methods
+
+This repository contains MATLAB scripts for analyzing **slope stability problems** in 2D and 3D using the **Limit Load (LL)** and **Shear Strength Reduction (SSR)** methods. The code supports various configurations of **finite elements**, **material models**, **continuation methods**, and **linear solvers**.
+
+---
+
+## 📁 Repository Structure (folder 'slope_stability')
+
+- **`slope_stability_*.m`: Main driver scripts for slope simulations in different configurations.**
+- **`agmg/`: Expected to contain [AGMG](https://agmg.eu/) library (see below).**
+- `+ASSEMBLY`: Assembly of stiffness matrices and force vectors.
+- `+CONSTITUTIVE_PROBLEM`: Material model and yield criteria.
+- `+CONTINUATION`: Implementation of continuation strategies.
+- `+LINEAR_SOLVERS`: Preconditioners and iterative/direct linear solvers.
+- `+MESH`: Mesh generators (2D) and mesh loaders (3D).
+- `+NEWTON`: Newton solvers for nonlinear systems.
+- `+VIZ`: Visualization of strains, stresses, displacements, etc.
+- `meshes/`: Contains prepared 3D meshes in HDF5 format.
+
+
+---
+
+## ⚙️ Dependencies
+
+- **MATLAB** (recommended version R2020b or newer).
+- [**AGMG** (Algebraic Multigrid)](https://agmg.eu/) – *Optional but recommended* for best performance.
+  - AGMG is **not open-source**, but an **academic license is available for free** upon request.
+  - After obtaining AGMG, place the files (for linux its 'agmg.m, dmtlagmg.mexa64, zmtlagmg.mexa64') into `agmg` folder in the  'slope_stability' directory of the repository.
+
+---
+
+## 🚀 How to Run
+
+### 1. Choose a script
+
+Main scripts are located directly in the 'slope_stability' root:
+- `slope_stability_2D_homo_LL.m`
+- `slope_stability_2D_homo_SSR.m`
+- `slope_stability_2D_Kozinec_LL.m`
+- `slope_stability_3D_homo_SSR.m`
+- etc.
+
+Each script corresponds to a different setting (2D/3D, homogeneous/heterogeneous, LL/SSR method).
+
+---
+
+### 2. AGMG Usage (Optional)
+
+AGMG usage is controlled by this flag inside each script:
+
+```matlab
+is_agmg_present = 1;
+addpath('agmg'); % Make sure this folder exists and contains AGMG
+```
+
+If AGMG is not available (`is_agmg_present = 0`), the code defaults to an **incomplete Cholesky preconditioner**, which is slower and less scalable.
+
+To use a **direct solver** instead of iterative GMRES:
+
+```matlab
+% Use this instead of iterative solver:
+linear_system_solver = LINEAR_SOLVERS.DIRECT_BACKSLASH();
+```
+
+---
+
+### 3. Selecting Mesh
+
+#### For 2D Simulations
+Meshes are generated internally based on geometry parameters (`x1`, `x2`, `y1`, `y2`, `h`, etc.) using:
+
+```matlab
+[coord, elem, ...] = MESH.mesh_P1_2D(...);
+% or
+[coord, elem, ...] = MESH.mesh_P2_2D(...);
+```
+
+#### For 3D Simulations
+Use prepared HDF5 meshes:
+
+```matlab
+file_path = 'meshes/SSR_homo_uni.h5';
+[coord, elem, ...] = MESH.load_mesh_P2(file_path);
+```
+
+You can select different levels of mesh adaptivity by commenting/uncommenting the desired file path.
+
+
+
+---
+## 📌 Features
+
+These codes are focused on the solution of slope stability problems in 2D and 3D by the shear strength reduction (SSR) and limit load methods. The presented solution concept build on Davis' modifications of the methods, standard finite elements and advanced continuation techniques combined with Newton-like solvers. In particular, one can choose DAVIS A, B or C approach, P1 or P2 elements and different continutation techniques. The available folders contain various 2D and 3D problems with either homogeneous or heterogeneous geometries and will be completed stepwisely. 
+
+
+---
+## 📝 Citation
+
+The used methods and algorithms have been developed within the following papers:
 
 S. Sysala, M. Béreš, S. Bérešová, T. Luber: Advanced continuation and iterative methods for slope stability analysis in 3D. Submitted in 2025.
 
