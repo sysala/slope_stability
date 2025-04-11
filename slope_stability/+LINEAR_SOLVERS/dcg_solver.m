@@ -1,4 +1,4 @@
-function [x, iter, resvec] = dcg_full_orth(A, b, M, W, maxits, tol, x0)
+function [x, iter, resvec] = dcg_solver(A, b, M, W, maxits, tol, x0)
 %DEFLATEDCG  Deflated Conjugate Gradient solver.
 %
 %   [x, iters, res_hist] = DCG(A, b, M, W, maxits, tol, x0) solves the
@@ -65,16 +65,8 @@ p=P(z);
 gamma_old=dot(r,z);
 resvec=zeros(maxits+1,1);
 resvec(1)=res;
-
-all_p = cell(maxits,1);
-all_Ap = cell(maxits,1);
-
 for j=1:maxits
     s=A*p;
-    p_A_norm = sqrt(dot(s, p));
-    all_p{j} = p/p_A_norm;
-    all_Ap{j} = s/p_A_norm;
-    
     alpha=gamma_old/dot(s,p);
     x=x+alpha*p;
     r=r-alpha*s;
@@ -85,13 +77,8 @@ for j=1:maxits
     end
     z=M(r);
     gamma_new=dot(r,z);
-    for k=1:j
-        dot_tmp = dot(z,all_Ap{k});
-        z = z - dot_tmp*all_p{k};
-    end
-    % beta=gamma_new/gamma_old;
-    % p=P(z)+beta*p;
-    p=P(z);
+    beta=gamma_new/gamma_old;
+    p=P(z)+beta*p;
     gamma_old=gamma_new;
 end
 

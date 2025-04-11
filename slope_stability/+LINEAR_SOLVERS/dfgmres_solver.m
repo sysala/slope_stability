@@ -1,4 +1,4 @@
-function [x, iters, res_hist] = dfgmres(A, b, M, W, maxits, tol, x0)
+function [x, iters, res_hist] = dfgmres_solver(A, b, M, W, maxits, tol, x0)
 %DFGMRES  Deflated Flexible GMRES iterative solver.
 %
 %   [x, iters, res_hist] = DFGMRES(A, b, M, W, maxits, tol, x0) solves the
