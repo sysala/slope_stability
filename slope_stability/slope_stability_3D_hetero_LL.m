@@ -10,10 +10,6 @@
 %  technique is applied.
 %
 % ======================================================================
-is_agmg_present = 1;
-addpath('agmg'); % For me it's inside folder "agmg" in the root of this repository.
-% ======================================================================
-
 
 %% The main input data
 % elem_type - type of finite elements; available choices: 'P2'
@@ -31,7 +27,7 @@ Davis_type = 'B';
 
 
 %% Creation/loading of the finite element mesh
-% file_path = 'meshes/LL_hetero_ada_uni.h5';
+% file_path = 'meshes/LL_hetero_uni.h5';
 file_path = 'meshes/LL_hetero_ada_L1.h5';
 % file_path = 'meshes/LL_hetero_ada_L2.h5';
 % file_path = 'meshes/LL_hetero_ada_L3.h5';
@@ -104,25 +100,23 @@ LL_omega_max = 8e7;               % Maximum value of omega.
 % (Other parameters such as r_damp are not needed here.)
 
 %% Input parameters for Newton's solvers
-it_newt_max = 50;                % Number of Newton's iterations.
+it_newt_max = 200;                % Number of Newton's iterations.
 it_damp_max = 10;                % Number of iterations within line search.
 tol = 1e-4;                      % Relative tolerance for Newton's solvers.
-r_min = 1e-6;                    % Basic minimal regularization of the stiffness matrix.
+r_min = 1e-4;                    % Basic minimal regularization of the stiffness matrix.
 
 %% Defining linear solver
+agmg_folder = "agmg"; % Check for AGMG in specified folder
+solver_type = 'DFGMRES_AGMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
+
 linear_solver_tolerance = 1e-1;
 linear_solver_maxit = 100;
 deflation_basis_tolerance = 1e-3;
 linear_solver_printing = 0;
 
-if is_agmg_present
-    preconditioner_builder = @(A) LINEAR_SOLVERS.diag_prec_AGMG(A, Q);
-else
-    preconditioner_builder = @(A) LINEAR_SOLVERS.diag_prec_ICHOL(A, Q);
-end
-linear_system_solver = LINEAR_SOLVERS.DFGMRES(preconditioner_builder, ...
-     linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing);
-% linear_system_solver = LINEAR_SOLVERS.DIRECT_BACKSLASH();
+[linear_system_solver] = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type, ...
+    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q);
+
 
 %% Constitutive problem and matrix builder
 dim = 3;

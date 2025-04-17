@@ -46,25 +46,15 @@ Each script corresponds to a different setting (2D/3D, homogeneous/heterogeneous
 
 ### 2. AGMG Usage
 
-AGMG usage is controlled by this flag inside each script:
+AGMG usage is controlled by solver type `DFGMRES_AGMG`:
 
 ```matlab
-is_agmg_present = 1;
-addpath('agmg'); % Make sure this folder exists and contains AGMG
+%% Defining linear solver
+agmg_folder = 'agmg'; % Make sure this folder exists and contains AGMG
+solver_type = 'DFGMRES_AGMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
 ```
 
-If AGMG is not available set
-```matlab
-is_agmg_present = 0;
-```
-The code defaults to an **incomplete Cholesky preconditioner**, which is slower and less scalable.
-
-To use a **direct solver** instead of iterative GMRES:
-
-```matlab
-% Use this instead of iterative solver:
-linear_system_solver = LINEAR_SOLVERS.DIRECT_BACKSLASH();
-```
+If AGMG is not available set different solver, or the code defaults to using a **direct solver**.
 
 ---
 

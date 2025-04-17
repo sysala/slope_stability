@@ -10,9 +10,6 @@
 %  indirect continuation is completed with 3 different Newton's algorithms.
 %
 % ======================================================================
-is_agmg_present = 1;
-addpath('agmg'); % for me its inside folder agmg in root of this repository  
-% ======================================================================
 
 %% The main input data
 % elem_type - type of finite elements; available choices: 'P2'
@@ -107,22 +104,20 @@ step_max = 100;           % maximal number of continuation steps
 it_newt_max = 100;               % number of Newton's iterations
 it_damp_max = 10;                % number of iterations within line search
 tol = 1e-4;                      % relative tolerance for Newton's solvers
-r_min = 1e-6;                    % basic minimal regularization of the stiffness matrix
+r_min = 1e-4;                    % basic minimal regularization of the stiffness matrix
 
 %% Defining linear solver
-linear_solver_tolerance = 1e-1;
-linear_solver_maxit = 1000;
-deflation_basis_tolerance = 1e-6;
-linear_solver_printing = 1;
+agmg_folder = "agmg"; % Check for AGMG in specified folder
+solver_type = 'DFGMRES_AGMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
 
-if is_agmg_present
-    preconditioner_builder = @(A) LINEAR_SOLVERS.diag_prec_AGMG(A, Q);
-else
-    preconditioner_builder = @(A) LINEAR_SOLVERS.diag_prec_ICHOL(A, Q);
-end
-linear_system_solver = LINEAR_SOLVERS.DFGMRES(preconditioner_builder, ...
-      linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing);
-% linear_system_solver = LINEAR_SOLVERS.DIRECT_BACKSLASH();
+linear_solver_tolerance = 1e-1;
+linear_solver_maxit = 100;
+deflation_basis_tolerance = 1e-3;
+linear_solver_printing = 0;
+
+[linear_system_solver] = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type, ...
+    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q);
+
 
 %% Constitutive problem and matrix builder
 dim = 3;
@@ -132,7 +127,7 @@ constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi,
 %--------------------------------------------------------------------------
 %% Computation of the factor of safety for the SSR method
 
-alg2on = 1; % Whether direct continuation method should be used
+alg2on = 0; % Whether direct continuation method should be used
 alg3on = 1; % Whether indirect continuation method should be used
 
 if alg2on  % Direct continuation method - Algorithm 2

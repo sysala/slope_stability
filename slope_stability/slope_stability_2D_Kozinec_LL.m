@@ -13,12 +13,7 @@
 % ======================================================================
 %
 
-is_agmg_present = 1;
-addpath('agmg'); % For me, it's inside the folder "agmg" in the root of this repository.
-
-%
-% The main input data
-%
+%% Main input data
 
 % elem_type - type of finite elements; available choices: 'P1', 'P2', 'P4'
 elem_type='P2';
@@ -101,10 +96,6 @@ bulk = bulk * ones(1, n_int);
 lame = lame * ones(1, n_int);
 
 
-
-
-
-
 %% Assembling
 
 % Assembling of the elastic stiffness matrix
@@ -123,25 +114,24 @@ step_max = 100;                % Maximum number of continuation steps.
 LL_omega_max = 200000;            % Maximum value of the control parameter omega.
 
 %% Input parameters for Newton's solvers
-it_newt_max = 50;               % Number of Newton's iterations
+it_newt_max = 200;               % Number of Newton's iterations
 it_damp_max = 10;               % Number of iterations within line search
-tol = 1e-6;                     % Relative tolerance for Newton's solvers
-r_min = 1e-6;                   % Basic minimal regularization of the stiffness matrix
+tol = 1e-4;                     % Relative tolerance for Newton's solvers
+r_min = 1e-4;                   % Basic minimal regularization of the stiffness matrix
 
 %% Defining linear solver
+agmg_folder = "agmg"; % Check for AGMG in specified folder
+solver_type = 'DIRECT'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
+
 linear_solver_tolerance = 1e-1;
 linear_solver_maxit = 100;
 deflation_basis_tolerance = 1e-3;
-linear_solver_printing = 0;
+linear_solver_printing = 1;
 
-if is_agmg_present
-    preconditioner_builder = @(A) LINEAR_SOLVERS.diag_prec_AGMG(A, Q);
-else
-    preconditioner_builder = @(A) LINEAR_SOLVERS.diag_prec_ICHOL(A, Q);
-end
+[linear_system_solver] = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type, ...
+    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q);
 
-% linear_system_solver = LINEAR_SOLVERS.DFGMRES(preconditioner_builder, linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing);
-linear_system_solver = LINEAR_SOLVERS.DIRECT_BACKSLASH();
+
 %% Constitutive problem and matrix builder
 dim = 2;
 n_strain = dim * (dim + 1) / 2;
@@ -162,9 +152,9 @@ linear_system_solver.expand_deflation_basis(U_elast(Q));
 omega_el = f_V(Q)' * U_elast(Q);        % Work of external forces.
 
 % Set the initial increment of omega.
-d_omega_ini = omega_el / 5;
+d_omega_ini = omega_el / 30;
 % Scale the elastic displacement field.
-U_elast = U_elast / 5;
+U_elast = U_elast / 30;
 
 % Run the indirect continuation method for limit load analysis.
 [U, t_hist, omega_hist, U_max_hist] = CONTINUATION.LL_indirect_continuation(...

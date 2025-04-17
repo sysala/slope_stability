@@ -12,9 +12,6 @@
 %
 % =========================================================================
 
-is_agmg_present = 1;
-addpath('agmg'); % For me, it's inside the folder "agmg" in the root of this repository.
-
 %% Main input data
 
 % elem_type - type of finite elements; available choices: 'P1', 'P2'
@@ -110,24 +107,23 @@ step_max = 100;                % Maximum number of continuation steps.
 LL_omega_max = 2000;            % Maximum value of the control parameter omega.
 
 %% Input parameters for Newton's solvers
-it_newt_max = 50;               % Number of Newton's iterations
+it_newt_max = 100;               % Number of Newton's iterations
 it_damp_max = 10;               % Number of iterations within line search
 tol = 1e-4;                     % Relative tolerance for Newton's solvers
-r_min = 1e-6;                   % Basic minimal regularization of the stiffness matrix
+r_min = 1e-4;                   % Basic minimal regularization of the stiffness matrix
 
 %% Defining linear solver
+agmg_folder = "agmg"; % Check for AGMG in specified folder
+solver_type = 'DIRECT'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
+
 linear_solver_tolerance = 1e-1;
 linear_solver_maxit = 100;
 deflation_basis_tolerance = 1e-3;
 linear_solver_printing = 0;
 
-if is_agmg_present
-    preconditioner_builder = @(A) LINEAR_SOLVERS.diag_prec_AGMG(A, Q);
-else
-    preconditioner_builder = @(A) LINEAR_SOLVERS.diag_prec_ICHOL(A, Q);
-end
+[linear_system_solver] = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type, ...
+    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q);
 
-linear_system_solver = LINEAR_SOLVERS.DFGMRES(preconditioner_builder, linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing);
 
 %% Constitutive problem and matrix builder
 dim = 2;
