@@ -1,4 +1,4 @@
-function [coord, elem, surf, Q, material] = load_mesh_P2(file_path)
+function [coord, elem, surf, Q, material] = load_mesh_P2(file_path, boundary_type)
 %--------------------------------------------------------------------------
 % load_mesh_P2 loads mesh data for quadratic (P2) finite elements.
 %
@@ -16,6 +16,11 @@ function [coord, elem, surf, Q, material] = load_mesh_P2(file_path)
 %   material - Material indices for each element.
 %--------------------------------------------------------------------------
 %
+
+if nargin < 2
+    boundary_type = 0;
+end
+
 % Load datasets from the HDF5 file.
 boundary = h5read(file_path, '/boundary');
 elem = h5read(file_path, '/elem') + 1;  % Adjust for MATLAB 1-indexing.
@@ -39,7 +44,11 @@ Q(2, tmp(:)) = 0;
 tmp = face(:, boundary == 4);
 Q(2, tmp(:)) = 0;
 tmp = face(:, boundary == 5);
-Q(3, tmp(:)) = 0;
+if boundary_type
+    Q(:, tmp(:)) = 0;
+else
+    Q(3, tmp(:)) = 0;
+end
 
 % Reorder coordinates: switch order to [x; z; y] (from original [x; y; z]).
 coord = double(node([1 3 2], :));

@@ -1,14 +1,12 @@
 %%  Heterogeneous slope and its stability (via SSR methods)
 % ======================================================================
-%  This program solves a 3D slope stability problem for a heterogeneous slope 
-%  by the modified shear strength reduction method suggested in (Sysala et al. 2021). 
-%  The Mohr-Coulomb yield criterion is considered together with 3 Davis approaches. 
-%  Standard finite elements (only P2 elements are available in this example) are used 
-%  on uniformly discretized meshes with varying densities. For P2 elements, a 7-point 
-%  Gauss quadrature is employed. To determine the safety factor of the SSR method, 
-%  two continuation techniques are implemented: the direct and the indirect methods. 
-%  The heterogeneous nature of the slope is modeled by assigning different material 
-%  properties (e.g., cohesion, friction angle, etc.) to different domains.
+%  This program solves a 3D slope stability problem by the modified shear
+%  strength reduction method suggested in (Sysala et al. 2021). It is
+%  considered the Mohr-Coulomb yield criterion, 3 Davis approaches,
+%  standard finite elements (either P1 or P2 elements) and meshes
+%  with different densities. For P2 elements, the 11-point Gauss quadrature
+%  is used. To find the safety factor of the SSR method, two continuation
+%  techniques are available: the direct and the indirect techniques.
 %
 % ======================================================================
 

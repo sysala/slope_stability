@@ -1,13 +1,13 @@
 %%  Heterogeneous slope and its stability  (via LL method)
 % ======================================================================
-%  This program solves a 3D slope stability problem for a heterogeneous slope 
-%  using the modified shear strength reduction method as suggested in 
-%  (Sysala et al. 2021). It considers the Mohr-Coulomb yield criterion along 
-%  with 3 Davis approaches, and employs standard finite elements (here, P2 elements)
-%  on uniformly discretized meshes with varying densities. For P2 elements, the 
-%  7-point Gauss quadrature is used for volume integration. To determine the 
-%  safety factor (limit load factor) of the SSR method, an indirect continuation 
-%  technique is applied.
+%  This program solves a 3D slope stability problem for a homogeneous slope
+%  using the modified shear strength reduction method in a limit load analysis.
+%  The problem is based on the Mohr-Coulomb yield criterion with one Davis 
+%  approach (user-selectable: 'A', 'B', or 'C') and standard finite elements 
+%  (only P2 elements are available in this example) on a uniform mesh. For P2 
+%  elements, the 11-point Gauss quadrature is used for volume integration.
+%  To determine the safety factor (limit load factor t*), an indirect 
+%  continuation technique is applied.
 %
 % ======================================================================
 

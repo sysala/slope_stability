@@ -5,7 +5,7 @@
 %  The problem is based on the Mohr-Coulomb yield criterion with one Davis 
 %  approach (user-selectable: 'A', 'B', or 'C') and standard finite elements 
 %  (only P2 elements are available in this example) on a uniform mesh. For P2 
-%  elements, the 7-point Gauss quadrature is used for volume integration.
+%  elements, the 11-point Gauss quadrature is used for volume integration.
 %  To determine the safety factor (limit load factor t*), an indirect 
 %  continuation technique is applied.
 %

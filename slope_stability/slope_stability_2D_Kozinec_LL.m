@@ -6,9 +6,7 @@
 %  considered the Mohr-Coulomb yield criterion, 3 Davis approaches,
 %  standard finite elements (P1, P2 or P4 elements) and uniform meshes
 %  with different densities. Gauss quadrature is used for numerical
-%  integration. To find the safety factor of the SSR method, 2 continuation
-%  techniques are available: the direct and the indirect techniques. The
-%  indirect continuation is completed with 3 different Newton's algorithms.
+%  integration.
 %
 % ======================================================================
 %

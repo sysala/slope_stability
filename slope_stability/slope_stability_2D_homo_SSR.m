@@ -7,8 +7,7 @@
 %  elements (either P1 or P2 elements), and uniform meshes with different
 %  densities. For P2 elements, the 7-point Gauss quadrature is used.
 %  To find the safety factor of the SSR method, two continuation techniques
-%  are available: the direct and the indirect techniques. The indirect
-%  continuation is completed with three different Newton's algorithms.
+%  are available: the direct and the indirect techniques.
 %
 % =========================================================================
 

@@ -3,11 +3,10 @@
 %  This program solves a 3D slope stability problem by the modified shear
 %  strength reduction method suggested in (Sysala et al. 2021). It is
 %  considered the Mohr-Coulomb yield criterion, 3 Davis approaches,
-%  standard finite elements (either P1 or P2 elements) and uniform meshes
-%  with different densities. For P2 elements, the 7-point Gauss quadrature
+%  standard finite elements (either P1 or P2 elements) and meshes
+%  with different densities. For P2 elements, the 11-point Gauss quadrature
 %  is used. To find the safety factor of the SSR method, two continuation
-%  techniques are available: the direct and the indirect techniques. The
-%  indirect continuation is completed with 3 different Newton's algorithms.
+%  techniques are available: the direct and the indirect techniques.
 %
 % ======================================================================
 
