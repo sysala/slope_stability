@@ -7,7 +7,7 @@ This repository contains MATLAB scripts for analyzing **slope stability problems
 ## 📁 Repository Structure (folder 'slope_stability')
 
 - **`slope_stability_*.m`: Main driver scripts for slope simulations in different configurations.**
-- `SIOPT_*.m`: Scripts for experiments presented in the SCIOPT paper. 
+- `SIOPT_*.m`: Scripts for experiments presented in the SIOPT paper. 
 - **`agmg/`: Expected to contain [AGMG](https://agmg.eu/) library (see below).**
 - `+ASSEMBLY`: Assembly of stiffness matrices and force vectors.
 - `+CONSTITUTIVE_PROBLEM`: Material model and yield criteria.
