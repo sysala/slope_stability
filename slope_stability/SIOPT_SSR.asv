@@ -127,8 +127,8 @@ constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi,
 direct_on = 0; % Whether direct continuation method should be used
 indirect_on = 1; % Whether indirect continuation method should be used
 
-if direct_on  % Direct continuation method 
-    fprintf('\n Direct continuation method\n');
+if direct_on  % Direct continuation method - Algorithm 2
+    fprintf('\n Direct continuation method - Algorithm 2\n');
     tic;
     [U2, lambda_hist2, omega_hist2, Umax_hist2] = CONTINUATION.SSR_direct_continuation(...
         lambda_init, d_lambda_init, d_lambda_min, d_lambda_diff_scaled_min, step_max, ...
@@ -137,8 +137,8 @@ if direct_on  % Direct continuation method
     time_run = toc;
     fprintf("Running_time = %f \n", time_run);
 end
-if indirect_on     % Indirect continuation method
-    fprintf('\n Indirect continuation method\n');
+if indirect_on     % Indirect continuation method - Algorithm 3
+    fprintf('\n Indirect continuation method - Algorithm 3 \n');
     tic;
     [U3, lambda_hist3, omega_hist3, Umax_hist3] = CONTINUATION.SSR_indirect_continuation(...
         lambda_init, d_lambda_init, d_lambda_min, d_lambda_diff_scaled_min, step_max, ...
@@ -148,11 +148,11 @@ if indirect_on     % Indirect continuation method
     fprintf("Running_time = %f \n", time_run);
 end
 
-%% Postprocessing - visualization of selected results for direct continuation
+%% Postprocessing - visualization of selected results for ALG2
 if direct_on
     VIZ.plot_displacements_3D(U2, coord, elem);
     VIZ.plot_deviatoric_strain_3D(U2, coord, elem, B);
-    % Visualization of the curve: omega -> lambda for direct continuation.
+    % Visualization of the curve: omega -> lambda for Alg2.
     figure; hold on; box on; grid on;
     plot(omega_hist2, lambda_hist2, '-o');
     title('Direct continuation method', 'Interpreter', 'latex')
@@ -160,11 +160,11 @@ if direct_on
     ylabel('strength reduction factor - $\lambda$', 'Interpreter', 'latex');
 end
 
-%% Postprocessing - visualization of selected results for indirect continuation
+%% Postprocessing - visualization of selected results for ALG3
 if indirect_on
     VIZ.plot_displacements_3D(U3, coord, elem);
     VIZ.plot_deviatoric_strain_3D(U3, coord, elem, B);
-    % Visualization of the curve: omega -> lambda for indirect continuation.
+    % Visualization of the curve: omega -> lambda for Alg3.
     figure; hold on; box on; grid on;
     plot(omega_hist3, lambda_hist3, '-o');
     title('Indirect continuation method', 'Interpreter', 'latex')

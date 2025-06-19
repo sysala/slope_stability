@@ -128,11 +128,11 @@ constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi,
 %--------------------------------------------------------------------------
 %% Computation of the factor of safety for the SSR method
 
-alg2on = 0; % Use direct continuation method (Algorithm 2).
-alg3on = 1; % Use indirect continuation method (Algorithm 3).
+direct_on = 0; % Use direct continuation method.
+indirect_on = 1; % Use indirect continuation method.
 
-if alg2on  % Direct continuation method - Algorithm 2.
-    fprintf('\n Direct continuation method - Algorithm 2\n');
+if direct_on  % Direct continuation method.
+    fprintf('\n Direct continuation method\n');
     tic;
     [U2, lambda_hist2, omega_hist2, Umax_hist2, work_hist] = CONTINUATION.SSR_direct_continuation(...
         lambda_init, d_lambda_init, d_lambda_min, d_lambda_diff_scaled_min, step_max, ...
@@ -141,8 +141,8 @@ if alg2on  % Direct continuation method - Algorithm 2.
     time_run = toc;
     fprintf("Running_time = %f \n", time_run);
 end
-if alg3on     % Indirect continuation method - Algorithm 3.
-    fprintf('\n Indirect continuation method - Algorithm 3 \n');
+if indirect_on     % Indirect continuation method.
+    fprintf('\n Indirect continuation method\n');
     tic;
     [U3, lambda_hist3, omega_hist3, Umax_hist3] = CONTINUATION.SSR_indirect_continuation(...
         lambda_init, d_lambda_init, d_lambda_min, d_lambda_diff_scaled_min, step_max, ...
@@ -152,11 +152,11 @@ if alg3on     % Indirect continuation method - Algorithm 3.
     fprintf("Running_time = %f \n", time_run);
 end
 
-%% Postprocessing - visualization of selected results for Algorithm 2
-if alg2on
+%% Postprocessing - visualization of selected results for direct continuation
+if direct_on
     VIZ.plot_displacements_3D(U2, coord, elem);
     VIZ.plot_deviatoric_strain_3D(U2, coord, elem, B);
-    % Visualization of the curve: omega -> lambda for Algorithm 2.
+    % Visualization of the curve: omega -> lambda for direct continuation.
     figure; hold on; box on; grid on;
     plot(omega_hist2, lambda_hist2, '-o');
     title('Direct continuation method', 'Interpreter', 'latex')
@@ -164,11 +164,11 @@ if alg2on
     ylabel('strength reduction factor - $\lambda$', 'Interpreter', 'latex');
 end
 
-%% Postprocessing - visualization of selected results for Algorithm 3
-if alg3on
+%% Postprocessing - visualization of selected results for indirect continuation
+if indirect_on
     VIZ.plot_displacements_3D(U3, coord, elem);
     VIZ.plot_deviatoric_strain_3D(U3, coord, elem, B);
-    % Visualization of the curve: omega -> lambda for Algorithm 3.
+    % Visualization of the curve: omega -> lambda for indirect continuation.
     figure; hold on; box on; grid on;
     plot(omega_hist3, lambda_hist3, '-o');
     title('Indirect continuation method', 'Interpreter', 'latex')
