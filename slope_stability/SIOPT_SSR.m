@@ -1,12 +1,13 @@
 %%  Homogeneous slope and its stability  (via SSR methods)
 % ======================================================================
 %  This program solves a 3D slope stability problem by the modified shear
-%  strength reduction method suggested in (Sysala et al. 2021). It is
-%  considered the Mohr-Coulomb yield criterion, 3 Davis approaches,
+%  strength reduction (SSR) method described in (Sysala et al., CAS 2025). 
+%  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
 %  standard finite elements (either P1 or P2 elements) and meshes
-%  with different densities. For P2 elements, the 11-point Gauss quadrature
-%  is used. To find the safety factor of the SSR method, two continuation
-%  techniques are available: the direct and the indirect techniques.
+%  with different densities are considered. For P2 elements, the 11-point 
+%  Gauss quadrature is used. To find the safety factor of the SSR method, 
+%  two continuation techniques are available: direct and indirect. The  
+%  benchmark described in (Sysala et al., SIOPT 2025) is considered.
 %
 % ======================================================================
 
@@ -89,7 +90,7 @@ f_V_int = [zeros(1, n_int); -gamma; zeros(1, n_int)];
 % vector of volume forces
 f_V = ASSEMBLY.vector_volume_3D(elem, coord, f_V_int, HatP, WEIGHT);
 
-%% Input parameters for continuation (for the SSR method)
+%% Input parameters for continuation methods
 lambda_init = 0.9;        % initial lower bound of lambda
 d_lambda_init = 0.1;      % initial increment of lambda
 d_lambda_min = 1e-3;      % minimal increment of lambda

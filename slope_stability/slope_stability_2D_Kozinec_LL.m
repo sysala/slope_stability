@@ -1,12 +1,14 @@
 %%  Heterogeneous slope in Doubrava-Kozinec and its stability (LL method)
 % =========================================================================
 %
-%  This program solves a 2D slope stability problem by the modified shear
-%  strength reduction method suggested in (Sysala et al. 2021). It is
-%  considered the Mohr-Coulomb yield criterion, 3 Davis approaches,
-%  standard finite elements (P1, P2 or P4 elements) and uniform meshes
-%  with different densities. Gauss quadrature is used for numerical
-%  integration.
+%  This program solves a 2D slope stability problem by the limit
+%  load (LL) method described in (Sysala et al., CAS 2025). The Mohr-
+%  Coulomb yield criterion, Davis approach, standard finite elements 
+%  (P1, P2 or P4 elements) and meshes with different densities are
+%  considered. For P2 elements, the 7-point Gauss quadrature
+%  is used. To find the safety factor of the LL method, the indirect 
+%  continuation technique is used. A heterogeneous slope from the locality
+%  Doubrava-Kozinec is considered, see (Sysala et al., NAG 2021)
 %
 % ======================================================================
 %
@@ -136,9 +138,9 @@ n_strain = dim * (dim + 1) / 2;
 constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi, Davis_type, shear, bulk, lame, WEIGHT, n_strain, n_int, dim);
 
 %--------------------------------------------------------------------------
-%% Computation of the limit load factor for the SSR method (homogeneous slope)
+%% Computation of the limit load factor by the indirect continuation
 
-fprintf('\n Indirect continuation method for limit load analysis\n');
+fprintf('\n Indirect continuation method for the LL method\n');
 tic;
 
 % Compute the elastic displacement field as a starting point.
@@ -167,9 +169,9 @@ fprintf("Running_time = %f \n", time_run);
 %% Postprocessing - visualization of selected results
 VIZ.plot_deviatoric_strain_2D(U,coord,elem,B);
 VIZ.plot_displacements_2D(U,coord,elem);
-% Visualization of the curve: omega -> lambda for Alg3.
+% Visualization of the continuation curve: omega -> lambda.
 figure; hold on; box on; grid on;
 plot(omega_hist, t_hist, '-o');
-title('Indirect continuation method for limit load (Homogeneous slope)', 'Interpreter', 'latex');
+title('Indirect continuation method for the LL method', 'Interpreter', 'latex');
 xlabel('Control variable - $\omega$', 'Interpreter', 'latex');
-ylabel('Limit load factor - $t$', 'Interpreter', 'latex');
+ylabel('Load factor - $t$', 'Interpreter', 'latex');

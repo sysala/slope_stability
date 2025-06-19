@@ -1,11 +1,15 @@
 %%  Homogeneous slope and its stability (via LL method)
 % =========================================================================
 %
-%  This program solves a 2D slope stability problem by the modified shear
-%  strength reduction method suggested in (Sysala et al. 2021). It considers
-%  the Mohr-Coulomb yield criterion, three Davis approaches, standard finite
-%  elements (either P1 or P2 elements), and uniform meshes with different
-%  densities. For P2 elements, the 7-point Gauss quadrature is used.
+%  This program solves a 2D slope stability problem by the limit
+%  load (LL) method described in (Sysala et al., CAS 2025). The Mohr-
+%  Coulomb yield criterion, Davis approach, standard finite elements 
+%  (either P1 or P2 elements) and meshes with different densities are
+%  considered. For P2 elements, the 7-point Gauss quadrature
+%  is used. To find the safety factor of the LL method, the indirect 
+%  continuation technique is used. A benchmark with a homogeneous slope
+%  is considered. It is possible to change slope inclination and other
+%  geometrical parameters.
 %
 % =========================================================================
 
@@ -98,7 +102,7 @@ f_V_int = [zeros(1, n_int); -gamma];
 % Vector of volume forces
 f_V = ASSEMBLY.vector_volume_2D(elem, coord, f_V_int, HatP, WEIGHT);
 
-%% Input parameters for continuation (for the limit load analysis)
+%% Input parameters for the indirect continuation method
 d_t_min = 1e-3;                % Minimal increment of load factor t.
 step_max = 100;                % Maximum number of continuation steps.
 LL_omega_max = 2000;            % Maximum value of the control parameter omega.
@@ -128,9 +132,8 @@ n_strain = dim * (dim + 1) / 2;
 constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi, Davis_type, shear, bulk, lame, WEIGHT, n_strain, n_int, dim);
 
 %--------------------------------------------------------------------------
-%% Computation of the limit load factor for the SSR method (homogeneous slope)
-
-fprintf('\n Indirect continuation method for limit load analysis\n');
+%% Computation of the limit load factor by the indirect continuation
+fprintf('\n Indirect continuation method for the LL method\n');
 tic;
 
 % Compute the elastic displacement field as a starting point.
@@ -146,7 +149,7 @@ d_omega_ini = omega_el / 5;
 % Scale the elastic displacement field.
 U_elast = U_elast / 5;
 
-% Run the indirect continuation method for limit load analysis.
+% Run the indirect continuation method for the LL method.
 [U, t_hist, omega_hist, U_max_hist] = CONTINUATION.LL_indirect_continuation(...
     d_omega_ini, d_t_min, step_max, LL_omega_max, ...
     it_newt_max, it_damp_max, tol, r_min, K_elast, U_elast, Q, f_V, ...
@@ -159,9 +162,9 @@ fprintf("Running_time = %f \n", time_run);
 %% Postprocessing - visualization of selected results
 VIZ.plot_deviatoric_strain_2D(U,coord,elem,B);
 VIZ.plot_displacements_2D(U,coord,elem);
-% Visualization of the curve: omega -> lambda for Alg3.
+% Visualization of the continuation curve: omega -> lambda.
 figure; hold on; box on; grid on;
 plot(omega_hist, t_hist, '-o');
-title('Indirect continuation method for limit load (Homogeneous slope)', 'Interpreter', 'latex');
+title('Indirect continuation method for the LL method', 'Interpreter', 'latex');
 xlabel('Control variable - $\omega$', 'Interpreter', 'latex');
-ylabel('Limit load factor - $t$', 'Interpreter', 'latex');
+ylabel('Load factor - $t$', 'Interpreter', 'latex');

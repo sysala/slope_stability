@@ -2,12 +2,15 @@
 % =========================================================================
 %
 %  This program solves a 2D slope stability problem by the modified shear
-%  strength reduction method suggested in (Sysala et al. 2021). It is
-%  considered the Mohr-Coulomb yield criterion, 3 Davis approaches,
-%  standard finite elements (P1, P2 or P4 elements) and uniform meshes
-%  with different densities. Gauss quadrature is used for numerical
-%  integration. To find the safety factor of the SSR method, 2 continuation
-%  techniques are available: the direct and the indirect techniques.
+%  strength reduction (SSR) method described in (Sysala et al., CAS 2025). 
+%  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
+%  standard finite elements (P1, P2 or P4 elements) and meshes
+%  with different densities are considered. For P2 elements, the 7-point 
+%  Gauss quadrature is used. To find the safety factor of the SSR method, 
+%  two continuation techniques are available: direct and indirect. 
+%  A benchmark with a homogeneous slope is considered. A heterogeneous 
+%  slope from the locality Doubrava-Kozinec is considered, 
+%  see (Sysala et al., NAG 2021).
 %
 % ======================================================================
 %
@@ -94,8 +97,6 @@ shear = shear * ones(1, n_int);
 bulk = bulk * ones(1, n_int);
 lame = lame * ones(1, n_int);
 
-
-
 %
 % Assembling of the elastic stiffness matrix
 %
@@ -112,7 +113,7 @@ f_V_int = [zeros(1,n_int);-gamma] ;
 f_V=ASSEMBLY.vector_volume_2D(elem,coord,f_V_int,HatP,WEIGHT);
 
 
-%% Input parameters for continuation (for the SSR method)
+%% Input parameters for the continuation methods
 
 lambda_init = 0.7;              % Initial lower bound of lambda
 d_lambda_init = 0.1;            % Initial increment of lambda

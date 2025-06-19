@@ -1,12 +1,13 @@
 %%  Homogeneous slope and its stability  (via LL method)
 % ======================================================================
-%  This program solves a 3D slope stability problem by the limit
-%  load method suggested in (Sysala et al. 2021). It is
-%  considered the Mohr-Coulomb yield criterion, 3 Davis approaches,
-%  standard finite elements (either P1 or P2 elements) and meshes
-%  with different densities. For P2 elements, the 11-point Gauss quadrature
-%  is used. To find the safety factor of the SSR method, two continuation
-%  techniques are available: the direct and the indirect techniques.
+%  This program solves a 2D slope stability problem by the limit
+%  load (LL) method described in (Sysala et al., CAS 2025). The Mohr-
+%  Coulomb yield criterion, Davis approach, standard finite elements 
+%  (either P1 or P2 elements) and meshes with different densities are
+%  considered. For P2 elements, the 11-point Gauss quadrature
+%  is used. To find the safety factor of the LL method, the indirect 
+%  continuation technique is used. The benchmark described in the paper 
+%  (Sysala et al., SIOPT 2025) is considered.
 %
 % ======================================================================
 
@@ -17,7 +18,9 @@ elem_type = 'P2';
 % Davis_type - choice of Davis' approach; available choices: 'A','B','C'
 Davis_type = 'B';
 
-lambda_ell = 1.0; % for Limit Load, factor of strength reduction (for ell plot)
+lambda_ell = 1.0; % choose lambda_ell = 1.0 for the LL method, 
+                  % to construct the function ell, which relates the LL and 
+                  % SSR method, choose other values of lambda_ell
 
 %% Data from the reference element
 % quadrature points and weights for volume integration
@@ -91,7 +94,7 @@ f_V_int = [zeros(1, n_int); -gamma; zeros(1, n_int)];
 % vector of volume forces
 f = ASSEMBLY.vector_volume_3D(elem, coord, f_V_int, HatP, WEIGHT);
 
-%% Input parameters for continuation (for the SSR method)
+%% Input parameters for the indirect continuation
 lambda_init = 0.9;        % initial lower bound of lambda
 d_lambda_init = 0.1;      % initial increment of lambda
 d_t_min = 1e-3;      % minimal increment of lambda
@@ -125,9 +128,9 @@ constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi,
 
 
 %--------------------------------------------------------------------------
-%% Computation of the factor of safety (limit load) for the SSR method
+%% Computation of the limit load factor by the indirect continuation 
 
-fprintf('\n Indirect continuation method\n');
+fprintf('\n Indirect continuation method for the LL method\n');
 tic;
 
 % Compute the elastic displacement field.
@@ -158,6 +161,6 @@ VIZ.plot_deviatoric_strain_3D(U, coord, elem, B);
 % Visualization of the curve: omega -> t.
 figure; hold on; box on; grid on;
 plot(omega_hist, t_hist, '-o');
-title('Indirect continuation method', 'Interpreter', 'latex')
+title('Indirect continuation method for the LL method', 'Interpreter', 'latex')
 xlabel('control variable - $\omega$', 'Interpreter', 'latex');
-ylabel('limit load factor - $t$', 'Interpreter', 'latex');
+ylabel('load factor - $t$', 'Interpreter', 'latex');
