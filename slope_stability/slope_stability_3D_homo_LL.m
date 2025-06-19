@@ -58,25 +58,25 @@ fprintf('  number of integration points = %d \n', n_int);
 
 %% Material parameters at integration points (Homogeneous)
 % Define homogeneous material properties.
-c0_val    = 6;                   % Cohesion.
-phi_val   = 45 * pi / 180;         % Friction angle (in radians).
-psi_val   = 0;                   % Dilatancy angle (in radians).
+c0    = 6;                   % Cohesion.
+phi   = 45 * pi / 180;         % Friction angle (in radians).
+psi   = 0;                   % Dilatancy angle (in radians).
 
 young     = 40000;               % Young's modulus.
 poisson   = 0.3;                 % Poisson's ratio.
-shear_val = young / (2 * (1 + poisson)); % Shear modulus.
-bulk_val  = young / (3 * (1 - 2 * poisson)); % Bulk modulus.
-lame_val  = bulk_val - 2 * shear_val / 3;  % Lame's coefficient.
-gamma_val = 20;                  % Unit weight.
+shear = young / (2 * (1 + poisson)); % Shear modulus.
+bulk  = young / (3 * (1 - 2 * poisson)); % Bulk modulus.
+lame  = bulk - 2 * shear / 3;  % Lame's coefficient.
+gamma = 20;                  % Unit weight.
 
 % For homogeneous case, assign constant values at all integration points.
-c0    = c0_val   * ones(1, n_int);
-phi   = phi_val  * ones(1, n_int);
-psi   = psi_val  * ones(1, n_int);
-shear = shear_val* ones(1, n_int);
-bulk  = bulk_val * ones(1, n_int);
-lame  = lame_val * ones(1, n_int);
-gamma = gamma_val* ones(1, n_int);
+c0    = c0   * ones(1, n_int);
+phi   = phi  * ones(1, n_int);
+psi   = psi  * ones(1, n_int);
+shear = shear* ones(1, n_int);
+bulk  = bulk * ones(1, n_int);
+lame  = lame * ones(1, n_int);
+gamma = gamma* ones(1, n_int);
 
 %% Assembly of the elastic stiffness matrix and volume force vector
 
