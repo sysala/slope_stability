@@ -18,7 +18,7 @@ function [U1, U2, omega1, omega2, lambda1, lambda2, all_newton_its] = init_phase
 %   omega2  - The value of omega corresponding to lambda2.
 %   all_newton_its - An array containing the number of Newton iterations for each call.
 %
-% The function first solves the nonlinear system for lambda1, then 
+% The function first solves the nonlinear system for lambda1=lambda_init, then 
 % increases lambda by d_lambda and attempts to compute a new solution.
 % If the solver fails for the second step, the increment d_lambda is halved 
 % until a convergent solution is found. While omega2 is almost the same as 
@@ -78,9 +78,9 @@ else           % The solver was successful.
      omega1 = f(Q)' * U1(Q);     
 end
 
-disp(['   lambda = ', num2str(lambda_init), ...
-         ', d_lambda = ', num2str(d_lambda_init), ...
-         ', omega = ', num2str(omega1)]); 
+disp(['   lambda_init = ', num2str(lambda_init), ...
+         ', d_lambda_init = ', num2str(d_lambda_init), ...
+         ', omega_init = ', num2str(omega1)]); 
 
 %    
 % Second step of the continuation method.
@@ -112,7 +112,7 @@ while true
        U2 = U_it;
        omega2 = f(Q)' * U2(Q);     
        lambda2 = lambda_it;  
-       if (abs(omega2-omega1)/omega1)<1e-5
+       if ((omega2-omega1)/max(1,omega1))<1e-5
            U1 = U2;
            lambda1 = lambda2;
            omega1 = omega2;
@@ -130,9 +130,11 @@ while true
     end
 end     
 
-disp(['   lambda = ', num2str(lambda2), ...
+disp(['   lambda1 = ', num2str(lambda1), ...
+         ', lambda2 = ', num2str(lambda2), ...
          ', d_lambda = ', num2str(lambda2 - lambda1), ...
-         ', omega = ', num2str(omega1),...
+         ', omega1 = ', num2str(omega1),...
+         ', omega2 = ', num2str(omega2),...
          ', d_omega = ', num2str(omega2 - omega1)]);
 
 end % function

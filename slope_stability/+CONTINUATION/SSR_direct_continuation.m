@@ -53,7 +53,7 @@ Umax_hist = zeros(1, 1000);      % History of maximum displacement values.
 work_hist = zeros(1, 1000);
 
 % First two steps of the continuation method.
-[U, omega_old, omega, lambda, U_old] = CONTINUATION.init_phase_SSR_direct_continuation(...
+[U_old, U, omega_old, omega, lambda_old, lambda] = CONTINUATION.init_phase_SSR_direct_continuation(...
     lambda_init, d_lambda_init, d_lambda_min, ...
     it_newt_max, it_damp_max, tol, eps, r_min, K_elast, Q, f, ...
     constitutive_matrix_builder, linear_system_solver);
@@ -61,7 +61,7 @@ linear_system_solver.expand_deflation_basis(U(Q));
 
 % Storage of the computed values.
 omega_hist(1) = omega_old;
-lambda_hist(1) = lambda_init;
+lambda_hist(1) = lambda_old;
 omega_hist(2) = omega;
 lambda_hist(2) = lambda;
 Umax_hist(1) = max(sqrt(sum(U.^2, 1)));

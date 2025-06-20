@@ -25,7 +25,7 @@ x1 = 15;         % Length of the body in front of the slope
 x3 = 15;         % Length of the body behind the slope
 y1 = 10;         % Height of the body below the slope
 y2 = 10;         % Height of the slope
-beta = pi/4;     % Slope angle
+beta = 45*pi/180;     % Slope angle
 x2 = y2/tan(beta); % Length of the slope in the x-direction
 
 %% Mesh data
@@ -137,8 +137,8 @@ constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi,
 %--------------------------------------------------------------------------
 %% Computation of the factor of safety for the SSR method
 
-direct_on = 0; % Use direct continuation method.
-indirect_on = 1; % Use indirect continuation method.
+direct_on = 1; % Use direct continuation method.
+indirect_on = 0; % Use indirect continuation method.
 
 if direct_on  % Direct continuation method.
     fprintf('\n Direct continuation method\n');
