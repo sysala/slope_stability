@@ -50,8 +50,8 @@ while true
     % Compute internal force and tangent operator.
     if compute_diffs
         [F, K_tangent] = constitutive_matrix_builder.build_F_K_tangent_reduced(U_it);
-    else
-        F = constitutive_matrix_builder.build_F_reduced(U_it);
+    % else
+    %     F = constitutive_matrix_builder.build_F_reduced(U_it);
     end
     
     % Compute relative residual criterion.

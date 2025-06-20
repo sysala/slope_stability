@@ -138,7 +138,7 @@ constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi,
 %% Computation of the factor of safety for the SSR method
 
 direct_on = 1; % Use direct continuation method.
-indirect_on = 0; % Use indirect continuation method.
+indirect_on = 1; % Use indirect continuation method.
 
 if direct_on  % Direct continuation method.
     fprintf('\n Direct continuation method\n');
