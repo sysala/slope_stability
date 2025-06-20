@@ -19,9 +19,6 @@ function [U, lambda_hist, omega_hist, Umax_hist, work_hist] = SSR_direct_continu
 % proceeds with continuation steps. At each step, if the solver fails or if 
 % the computed omega does not increase, the increment in lambda is reduced.
 %
-% Alternative methods (e.g., bisection or tangent methods w.r.t. lambda) are 
-% provided as commented-out code.
-%
 % INPUTS:
 %   lambda_init              - Initial value of the parameter lambda.
 %   d_lambda_init            - Initial increment of lambda.
@@ -88,7 +85,6 @@ while true
     % Update of the parameter lambda.
     lambda_it = lambda + d_lambda;
     
-    % U_ini = d_omega * (U - U_old) / (omega - omega_old) + U;
     % Computation of U and omega for given lambda_it.
     [U_it, omega_it, flag] = CONTINUATION.omega_SSR_direct_continuation(...
         lambda_it, U, eps, d_lambda, ...
@@ -102,7 +98,6 @@ while true
         d_lambda = d_lambda / 2;
     % elseif d_omega_test > 2*d_omega
     %     % too large increment of omega
-    %     %   U = (U + U_it) / 2;
     %     d_lambda = d_lambda / 2;
     else  % The solver was successful.
         U = U_it;
@@ -131,9 +126,6 @@ while true
         if d_omega_test > 1.5 * d_omega
             d_lambda = d_lambda / 2;
         end
-        % if d_omega_test > 2 * d_omega
-        %     d_lambda = d_lambda / 2;
-        % end
         d_omega = d_omega_test;
     end % if flag
     

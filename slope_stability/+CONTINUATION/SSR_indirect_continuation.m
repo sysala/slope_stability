@@ -13,7 +13,10 @@ function [U, lambda_hist, omega_hist, Umax_hist] = SSR_indirect_continuation(...
 %
 %       F_lambda(U) = f   and   f' * U = omega,
 %
-% where F_lambda(U) is the internal force vector for a given lambda.
+% where F_lambda(U) is the internal force vector for a given lambda. This
+% system is primarily solved by the Newton method. Alternative methods 
+% (e.g., bisection or tangent methods w.r.t. lambda) are provided as 
+% commented-out code.
 %
 % The algorithm updates lambda and omega adaptively, storing the history of 
 % computed values for further analysis.
