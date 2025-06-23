@@ -1,16 +1,12 @@
-function gamma=gravity(gamma_sat,gamma_unsat,coord,elem,HatP)
+function saturation=saturated_zone(coord,elem,HatP)
 
 % =========================================================================
 %
-%  This function determines the specific weight at integration points 
-%  depending on a given saturation curve. This curve is a part of this
-%  code.
+%  This function determines integration points below the prescribed
+%  phreatic surface. The curve describing the phreatic surface is a part of 
+%  this code.
 %
 %  input data:
-%    gamma_sat -  1 x n_int array of specific weights at integration points
-%                 for saturated materials
-%    gamma_unsat- 1 x n_int array of specific weights at integration points
-%                 for unsaturated materials
 %    coord - coordinates of the nodes, size(coord)=(2,n_n) where n_n is a
 %            number of nodes
 %    elem - n_p x n_e array containing numbers of vertices defining each
@@ -75,13 +71,11 @@ function gamma=gravity(gamma_sat,gamma_unsat,coord,elem,HatP)
 %
 % Assembling of the output array gamma
 % 
-  gamma=zeros(1,n_int);
+  saturation=false(1,n_int);
   for i=1:n_int
       x=C_int1(i); y=C_int2(i);
       if y<=f(x)
-          gamma(i)=gamma_sat(i);
-      else
-          gamma(i)=gamma_unsat(i);
+          saturation(i)=1;
       end
   end       
   
