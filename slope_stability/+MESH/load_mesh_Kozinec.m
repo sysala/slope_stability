@@ -7,7 +7,7 @@ function [coord, elem, Q, mater] = load_mesh_Kozinec(elem_type, path)
   
   % arrays over finite elements
   elem=load([path 'elements3.txt'])'+1; % vertices  
-  mater=load([path 'materials3.txt'])';  % material type
+  mater=load([path 'materials3.txt'])-1;  % material type
 
   % extensions of the arrays elem and coord in the case of P2 or P4 elements 
   if strcmp(elem_type,'P2')==1
