@@ -18,7 +18,7 @@ function [c0, phi, psi, shear, bulk, lame, gamma] = heterogenous_materials(mat_i
 %                    must include fields: c0, phi, psi, young, poisson, gamma.
 %
 % OUTPUT:
-%   c0     - Array of c0 values for each integration point, size: (1, n_int*n_q)
+%   c0     - Array of c0 values for each integration point, size: (1, n_e*n_q)
 %   phi    - Array of phi values (in radians) for each integration point.
 %   psi    - Array of psi values (in radians) for each integration point.
 %   shear  - Array of shear modulus values for each integration point.
@@ -29,19 +29,19 @@ function [c0, phi, psi, shear, bulk, lame, gamma] = heterogenous_materials(mat_i
 %--------------------------------------------------------------------------
 
 % Number of elements (integration points before quadrature expansion)
-n_int = length(mat_identifier);
+n_e = length(mat_identifier);
 
 % Initialize material property arrays (one entry per element)
-c0    = zeros(1, n_int);
-phi   = zeros(1, n_int);
-psi   = zeros(1, n_int);
-shear = zeros(1, n_int);
-bulk  = zeros(1, n_int);
-lame  = zeros(1, n_int);
-gamma = zeros(1, n_int);
+c0    = zeros(1, n_e);
+phi   = zeros(1, n_e);
+psi   = zeros(1, n_e);
+shear = zeros(1, n_e);
+bulk  = zeros(1, n_e);
+lame  = zeros(1, n_e);
+gamma = zeros(1, n_e);
 
 % Assign properties to each element based on the material identifier
-for i = 1:n_int
+for i = 1:n_e
     % Adjust index since mat_identifier is assumed to start from 0
     mat_id = mat_identifier(i) + 1;
     
