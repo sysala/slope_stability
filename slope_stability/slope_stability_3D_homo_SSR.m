@@ -19,6 +19,21 @@ elem_type = 'P2';
 % Davis_type - choice of Davis' approach; available choices: 'A','B','C'
 Davis_type = 'B';
 
+% Material parameters for each subdomain. In the following table, we
+% specify in each column the following material parameters, respectively:
+% [c0, phi, psi, young, poisson, gamma_sat, gamma_unsat], where
+%    c0 ... Cohesion (c)
+%    phi ... Friction angle (phi in degrees)
+%    psi ... Dilatancy angle (psi in degrees)
+%    young ... Young's modulus (E)
+%    poisson ...  Poisson's ratio (nu)
+%    gamma_sat ...   Specific weight - saturated (gamma_sat in kN/m^3)
+%    gamma_unsat ... Specific weight - unsaturated (gamma_unsat in kN/m^3)
+% If gamma_sat and gamma_unsat are not distinguished, use the same values 
+% for these parameters. Each row of the table represents one subdomain. If 
+% a homogeneous body is considered, only one row is prescribed.
+mat_props = [6, 45, 0, 40000, 0.3, 20, 20]; 
+
 %% Data from the reference element
 % quadrature points and weights for volume integration
 [Xi, WF] = ASSEMBLY.quadrature_volume_3D(elem_type);
@@ -37,7 +52,7 @@ switch(elem_type)
     case 'P1'
         error("Prepared meshes are only for P2 elements.")
     case 'P2'
-        [coord, elem, surf, Q, material_identifier] = MESH.load_mesh_P2(file_path);
+        [coord, elem, surf, Q, ~] = MESH.load_mesh_P2(file_path);
         fprintf('P2 elements: \n')
     otherwise
         error('bad choice of element type');
@@ -56,31 +71,31 @@ fprintf('  number of unknowns = %d ', n_unknown);
 fprintf('  number of elements = %d ', n_e);
 fprintf('  number of integration points = %d \n', n_int);
 
+% The array material_identifier for a homogeneous body
+material_identifier = zeros(1,n_e);
+
 %% Material parameters at integration points
-% (for a unified treatment of homogeneous and heterogeneous slopes)
-% Define material properties for each domain
+% Fields with prescribed material properties
+fields = {'c0',      ... % Cohesion (c)
+          'phi',     ... % Friction angle (phi in degrees)
+          'psi',     ... % Dilatancy angle (psi in degrees)
+          'young',   ... % Young's modulus (E)
+          'poisson', ... % Poisson's ratio (nu)
+          'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
+          'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
 
-% strength material parameters
-c0 = 6;                           % cohesion
-phi = 45*pi/180;                  % frictional angle
-psi = 0;                          % dilatancy angle
+% Convert properties to structured format.
+materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props, 2), 'UniformOutput', false);
 
-% elastic material parameters (FoS should be independent of these parameters)
-young = 40000;                    % Young's modulus
-poisson = 0.3;                    % Poisson's ratio
-shear = young / (2*(1+poisson));   % shear modulus
-bulk = young / (3*(1-2*poisson));  % bulk modulus
-lame = bulk - 2*shear/3;           % lame's coefficient (lambda)
-% specific weight of the material creating a slope
-gamma = 20;
+% saturation - a prescribed logical array indicating integration points 
+%              where the body is saturated. If gamma_sat and gamma_unsat 
+%              are the same, set saturation=true(1,n_int). Otherwise,
+%              this logical array is derived from a given phreatic surface.
+saturation = true(1,n_int);
 
-c0 = c0 * ones(1, n_int);
-phi = phi * ones(1, n_int);
-psi = psi * ones(1, n_int);
-shear = shear * ones(1, n_int);
-bulk = bulk * ones(1, n_int);
-lame = lame * ones(1, n_int);
-gamma = gamma * ones(1, n_int);
+% Material parameters at integration points.
+[c0, phi, psi, shear, bulk, lame, gamma] = ...
+      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 %% Assembly of the elastic matrix and volume forces vector
 
