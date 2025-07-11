@@ -11,12 +11,12 @@ function [coord, elem, Q, mater] = load_mesh_Kozinec(elem_type, path)
 
   % extensions of the arrays elem and coord in the case of P2 or P4 elements 
   if strcmp(elem_type,'P2')==1
-    [coord_mid, elem_mid]= MESH.midpoints_P2(coord,elem);
+    [coord_mid, elem_mid, ~]= MESH.midpoints_P2(coord,elem);
     coord=[coord, coord_mid];
     elem=[elem; elem_mid];
   end
   if strcmp(elem_type,'P4')==1
-    [coord_mid, elem_mid]= MESH.midpoints_P4(coord,elem);
+    [coord_mid, elem_mid, ~]= MESH.midpoints_P4(coord,elem);
     coord=[coord, coord_mid];
     elem=[elem; elem_mid];
   end

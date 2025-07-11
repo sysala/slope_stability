@@ -1,26 +1,28 @@
-%%  Homogeneous slope and its stability (via SSR methods)
+%%  Stability of a high heterogeneous embankment dam via the SSR methods
 % =========================================================================
+%
 %  This program solves a 2D slope stability problem by the modified shear
 %  strength reduction (SSR) method described in (Sysala et al., CAS 2025). 
 %  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
-%  standard finite elements (either P1 or P2 elements) and meshes
+%  standard finite elements (P1, P2 or P4 elements) and meshes
 %  with different densities are considered. For P2 elements, the 7-point 
 %  Gauss quadrature is used. To find the safety factor of the SSR method, 
-%  two continuation techniques are available: direct and indirect. 
-%  A benchmark with a homogeneous slope is considered. It is possible to
-%  change geometrical parameters and mesh density.
+%  two continuation techniques are available: direct and indirect. A
+%  bechmark problem on a high heterogeneous embankment dam with unconfined 
+%  seepage is considered, see (Sysala et al., CAS 2023).
 %
-% =========================================================================
+% ======================================================================
+%
 
-%% Main input data
+%% The main input data
 
-% elem_type - type of finite elements; available choices: 'P1', 'P2'
-elem_type = 'P2';
+% elem_type - type of finite elements; available choices: 'P1', 'P2', 'P4'
+elem_type='P2';
 
-% Davis_type - choice of Davis' approach; available choices: 'A', 'B', 'C'
-Davis_type = 'B';
+% Davis_type - choice of Davis' approach; available choices: 'A','B','C'
+Davis_type='B';
 
-% Material parameters for each subdomain. In the following table, we
+% Mechanical parameters for each subdomain. In the following table, we
 % specify in each column the following material parameters, respectively:
 % [c0, phi, psi, young, poisson, gamma_sat, gamma_unsat], where
 %    c0 ... Cohesion (c)
@@ -33,58 +35,90 @@ Davis_type = 'B';
 % If gamma_sat and gamma_unsat are not distinguished, use the same values 
 % for these parameters. Each row of the table represents one subdomain. If 
 % a homogeneous body is considered, only one row is prescribed.
-mat_props = [6, 45, 0, 40000, 0.3, 20, 20]; 
+mat_props = ...
+   [50.0, 42.00, 42.00, 16000, 0.4, 27.0, 27.0;  % Subdomain 1 - Zone X
+     0.5, 41.00,  0.00, 16000, 0.4, 22.0, 22.0;  % Subdomain 2 - Zone RF
+     0.5, 40.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 3 - Zone C2
+     0.0, 38.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 4 - Zone B
+    10.0, 25.00,  0.00, 16000, 0.4, 22.0, 22.0;  % Subdomain 5 - Zone A
+     0.5, 41.00,  0.00, 16000, 0.4, 22.0, 22.0;  % Subdomain 6 - Zone RF
+    75.0, 42.00, 42.00, 16000, 0.4, 27.0, 27.0;  % Subdomain 7 - Zone E
+     0.0, 38.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 8 - Zone B
+     0.5, 41.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 9 - Zone C1
+     0.5, 41.00,  0.00, 16000, 0.4, 21.0, 21.0]; % Subdomain 10 - Zone D  
 
-% Geometrical parameters
-x1 = 15;         % Length of the body in front of the slope
-x3 = 15;         % Length of the body behind the slope
-y1 = 10;         % Height of the body below the slope
-y2 = 10;         % Height of the slope
-beta = 45*pi/180;     % Slope angle
-x2 = y2/tan(beta); % Length of the slope in the x-direction
-
-% Mesh data
-h = 1/1;         % Discretization parameter
+%  Hydraulic conductivity for each subdomain [m/s]
+  k = [1.0e-5   % Subdomain 1 - Zone X
+       1.0e-4   % Subdomain 2 - Zone RF
+       5.0e-5   % Subdomain 3 - Zone C2
+       5.0e-6   % Subdomain 4 - Zone B
+       1.0e-9   % Subdomain 5 - Zone A
+       1.0e-4   % Subdomain 6 - Zone RF
+       2.0e-9   % Subdomain 7 - Zone E
+       5.0e-6   % Subdomain 8 - Zone B
+       5.0e-5   % Subdomain 9 - Zone C1     
+       5.0e-4]; % Subdomain 10 - Zone D            
 
 %% Data from the reference element
-
-% Quadrature points and weights for volume integration
+% quadrature points and weights for volume integration
 [Xi, WF] = ASSEMBLY.quadrature_volume_2D(elem_type);
-% Local basis functions and their derivatives
-[HatP, DHatP1, DHatP2] = ASSEMBLY.local_basis_volume_2D(elem_type, Xi);
+% local basis functions and their derivatives
+[HatP,DHatP1,DHatP2] = ASSEMBLY.local_basis_volume_2D(elem_type, Xi);
 
-%% Creation of the uniform finite element mesh
+%% Creation/loading of the finite element mesh
+[coord, elem, Q, material_identifier, surf] = MESH.load_mesh_Franz_dam(elem_type, 'meshes/Franz_dam/');
+% number of nodes, elements and integration points + print
+n_n=size(coord,2);
+n_unknown=length(coord(Q)); % number of unknowns
+n_e=size(elem,2);           % number of elements
+n_q=length(WF);             % number of quadratic points
+n_int = n_e*n_q ;           % total number of integrations points
+%
+fprintf('\n');
+fprintf('Mesh data:');
+fprintf('  number of nodes =%d ',n_n);
+fprintf('  number of unknowns =%d ',n_unknown);
+fprintf('  number of elements =%d ',n_e);
+fprintf('  number of integration points =%d ',n_int);
+fprintf('\n');
 
-switch(elem_type)
-    case 'P1'
-        [coord, elem, ELEM_ED, EDGE_EL, Q] = MESH.mesh_P1_2D(h, x1, x2, x3, y1, y2);
-        fprintf('P1 elements: \n')
-    case 'P2'
-        [coord, elem, ELEM_ED, EDGE_EL, Q] = MESH.mesh_P2_2D(h, x1, x2, x3, y1, y2);
-        fprintf('P2 elements: \n')
-    otherwise
-        error('Bad choice of element type');
-end
+%% Computation of porous water pressure
 
-% Number of nodes, elements, and integration points + print
-n_n = size(coord,2);          % Number of nodes
-n_unknown = length(coord(Q)); % Number of unknowns
-n_e = size(elem,2);           % Number of elements
-n_ed = size(EDGE_EL,2);       % Number of edges
-n_q = length(WF);             % Number of quadrature points
-n_int = n_e * n_q;            % Total number of integration points
+% Hydraulic conductivity ateach integration point
+conduct0=SEEPAGE.heter_conduct(material_identifier,n_q,k); 
 
-fprintf('\n The mesh data:');
-fprintf('  Number of nodes = %d ', n_n);
-fprintf('  Number of unknowns = %d ', n_unknown);
-fprintf('  Number of elements = %d ', n_e);
-fprintf('  Number of edges = %d ', n_ed);
-fprintf('  Number of integration points = %d \n', n_int);
+% specific weight of water in kPa
+grho=9.81;
 
-% The array material_identifier for a homogeneous body
-material_identifier = zeros(1,n_e);
+% Dirichlet boundary conditions for pressure (problem dependent)
+Q_D=(coord(2,surf(1,:))+coord(2,surf(2,:)))/2>=-400+1e-1;
+Q_w=true(1,n_n);
+Q_w(unique(surf(:,Q_D)))=0;
 
-%% Material parameters at integration points
+% Nonhomogeneous part of the pressure (problem dependent)
+x1=-82.5; y1=-50; 
+x2=172.5; y2=-112; 
+pw_D=zeros(1,n_n);
+part1=(coord(1,:)<x1+1e-9)&(coord(2,:)<y1);
+part2=(coord(1,:)>=x1+1e-9)&(coord(1,:)<x2+1e-9)&(coord(2,:)<((y2-y1)/(x2-x1))*(coord(1,:)-x1)+y1);
+part3=(coord(1,:)>=x2+1e-9)&(coord(2,:)<y2);
+pw_D(part1)=grho*(y1-coord(2,part1));
+pw_D(part2)=grho*(((y2-y1)/(x2-x1))*(coord(1,part2)-x1)+y1-coord(2,part2));
+pw_D(part3)=grho*(y2-coord(2,part3));  
+
+% Computation on the pore pressure and its gradient
+[pw, grad_p, mater_sat]=SEEPAGE.seepage_problem_2D...
+                         (coord,elem,Q_w,pw_D,grho,conduct0,HatP,DHatP1,DHatP2,WF);
+
+% Saturation - a prescribed logical array indicating integration points 
+%              where the body is saturated. If gamma_sat and gamma_unsat 
+%              are the same, set saturation=true(1,n_int). Otherwise,
+%              this logical array is derived from the phreatic surface.
+mater_sat_ext=repmat(mater_sat,n_q,1);
+saturation=mater_sat_ext(:);
+
+%% Mechanical material Parameters at Integration Points
+
 % Fields with prescribed material properties
 fields = {'c0',      ... % Cohesion (c)
           'phi',     ... % Friction angle (phi in degrees)
@@ -97,29 +131,26 @@ fields = {'c0',      ... % Cohesion (c)
 % Convert properties to structured format.
 materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props, 2), 'UniformOutput', false);
 
-% saturation - a prescribed logical array indicating integration points 
-%              where the body is saturated. If gamma_sat and gamma_unsat 
-%              are the same, set saturation=true(1,n_int). Otherwise,
-%              this logical array is derived from a given phreatic surface.
-saturation = true(1,n_int);
-
 % Material parameters at integration points.
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
       ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
-%% Assembling of the elastic stiffness matrix
-[K_elast, B, WEIGHT] = ASSEMBLY.elastic_stiffness_matrix_2D(elem, coord, DHatP1, DHatP2, WF, shear, lame);
+%% Assembling for mechanics
 
-%% Assembling of the vector of volume forces
+% Assembling of the elastic stiffness matrix
+[K_elast,B,WEIGHT]=ASSEMBLY.elastic_stiffness_matrix_2D(elem,coord,...
+    DHatP1,DHatP2,WF,shear,lame);
 
-% Volume forces at integration points, size(f_V_int) = (2, n_int)
-f_V_int = [zeros(1, n_int); -gamma];
-% Vector of volume forces
-f_V = ASSEMBLY.vector_volume_2D(elem, coord, f_V_int, HatP, WEIGHT);
+% volume forces at integration points, size(f_V_int)=(2,n_int)
+% grad_p=zeros(2,n_int);
+f_V_int = [-grad_p(1,:);-grad_p(2,:)-gamma] ;
+% vector of volume forces
+f_V=ASSEMBLY.vector_volume_2D(elem,coord,f_V_int,HatP,WEIGHT);
+
 
 %% Input parameters for the continuation methods
 
-lambda_init = 0.9;              % Initial lower bound of lambda
+lambda_init = 0.7;              % Initial lower bound of lambda
 d_lambda_init = 0.1;            % Initial increment of lambda
 d_lambda_min = 1e-5;            % Minimal increment of lambda
 d_lambda_diff_scaled_min = 0.001;% Minimal rate of increment of lambda
@@ -154,7 +185,7 @@ constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi,
 %% Computation of the factor of safety for the SSR method
 
 direct_on = 1; % Use direct continuation method.
-indirect_on = 1; % Use indirect continuation method.
+indirect_on = 0; % Use indirect continuation method.
 
 if direct_on  % Direct continuation method.
     fprintf('\n Direct continuation method\n');
@@ -179,6 +210,10 @@ end
 
 %% Postprocessing - visualization of selected results for direct continuation
 if direct_on
+    VIZ.draw_heterogeneity_Franz_dam(coord,elem,material_identifier);
+    VIZ.draw_mesh_2D(coord,elem)
+    VIZ.plot_pore_pressure_2D(pw,coord,elem);
+    VIZ.draw_saturation_2D(coord,elem,mater_sat);
     VIZ.plot_deviatoric_strain_2D(U2,coord,elem,B);
     VIZ.plot_displacements_2D(U2,coord,elem);
     % Visualization of the curve: omega -> lambda for direct continuation.
@@ -191,6 +226,10 @@ end
 
 %% Postprocessing - visualization of selected results for indirect continuation
 if indirect_on
+    VIZ.draw_heterogeneity_Franz_dam(coord,elem,material_identifier);
+    VIZ.draw_mesh_2D(coord,elem)
+    VIZ.plot_pore_pressure_2D(pw,coord,elem);
+    VIZ.draw_saturation_2D(coord,elem,mater_sat);
     VIZ.plot_deviatoric_strain_2D(U3,coord,elem,B);
     VIZ.plot_displacements_2D(U3,coord,elem);
     % Visualization of the curve: omega -> lambda for indirect continuation.

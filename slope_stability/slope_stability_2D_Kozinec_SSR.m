@@ -18,7 +18,7 @@
 %% The main input data
 
 % elem_type - type of finite elements; available choices: 'P1', 'P2', 'P4'
-elem_type='P2';
+elem_type='P4';
 
 % Davis_type - choice of Davis' approach; available choices: 'A','B','C'
 Davis_type='B';
