@@ -71,6 +71,11 @@ Umax_hist(2) = max(sqrt(sum(U.^2, 1)));
 % Other initial data.
 d_omega = omega - omega_old;     % Current increment of omega.
 
+% Check whether omega_max_stop is not too low
+if omega_max_stop<omega + d_omega
+    error('Too small value of omega_max_stop. It is necessary to increase this input quantinty.')
+end
+
 %
 % While cycle over the parameter omega.
 %
