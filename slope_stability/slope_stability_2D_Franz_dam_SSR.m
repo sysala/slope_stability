@@ -154,13 +154,13 @@ lambda_init = 0.7;              % Initial lower bound of lambda
 d_lambda_init = 0.1;            % Initial increment of lambda
 d_lambda_min = 1e-5;            % Minimal increment of lambda
 d_lambda_diff_scaled_min = 0.001;% Minimal rate of increment of lambda
-omega_max_stop = 7e7;           % Maximum omega, then stop
+omega_max_stop = 1e10;           % Maximum omega, then stop
 step_max = 100;                 % Maximum number of continuation steps
 
 %% Input parameters for Newton's solvers
 it_newt_max = 50;               % Number of Newton's iterations
 it_damp_max = 10;               % Number of iterations within line search
-tol = 1e-4;                     % Relative tolerance for Newton's solvers
+tol = 1e-5;                     % Relative tolerance for Newton's solvers
 r_min = 1e-4;                   % Basic minimal regularization of the stiffness matrix
 
 %% Defining linear solver
@@ -185,7 +185,7 @@ constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi,
 %% Computation of the factor of safety for the SSR method
 
 direct_on = 1; % Use direct continuation method.
-indirect_on = 0; % Use indirect continuation method.
+indirect_on = 1; % Use indirect continuation method.
 
 if direct_on  % Direct continuation method.
     fprintf('\n Direct continuation method\n');
