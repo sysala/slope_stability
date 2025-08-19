@@ -59,16 +59,18 @@ k = 1.0 ;
 [HatP, DHatP1, DHatP2, DHatP3] = ASSEMBLY.local_basis_volume_3D(elem_type, Xi);
 
 %% Creation of the uniform finite element mesh
-switch(elem_type)
-    case 'P1'
-        [coord, elem, surf, Q] = MESH.mesh_P1_3D(N_h, x1, x2, x3, y1, y2, z);
-        fprintf('P1 elements: \n')
-    case 'P2'
-        [coord, elem, surf, Q] = MESH.mesh_P2_3D(N_h, x1, x2, x3, y1, y2, z);
-        fprintf('P2 elements: \n')
-    otherwise
-        error('Bad choice of element type');
-end
+% switch(elem_type)
+%     case 'P1'
+%         [coord, elem, surf, Q] = MESH.mesh_P1_3D(N_h, x1, x2, x3, y1, y2, z);
+%         fprintf('P1 elements: \n')
+%     case 'P2'
+%         [coord, elem, surf, Q] = MESH.mesh_P2_3D(N_h, x1, x2, x3, y1, y2, z);
+%         fprintf('P2 elements: \n')
+%     otherwise
+%         error('Bad choice of element type');
+% end
+[coord, elem, surf, Q, material, triangle_labels] = MESH.load_mesh_gmsh_waterlevels("meshes/slope_with_waterlevels.h5");
+
 
 % number of nodes, elements and integration points + print
 n_n=size(coord,2);
@@ -97,23 +99,25 @@ conduct0=SEEPAGE.heter_conduct(material_identifier,n_q,k);
 grho=9.81;
 
 % Dirichlet boundary conditions for pressure (problem dependent)
-Q_w=true(1,n_n);
-Q_w(coord(1,:)<=0.001)=0;
-Q_w(coord(1,:)>=x1+x2+x3-0.001)=0;
-Q_w(coord(2,:)>=y1+y2-0.001)=0;
-Q_w((coord(2,:)>=y1-0.001)&(coord(1,:)>=x1+x2-0.001))=0;
-Q_w((coord(2,:)>=y1-0.001)&(coord(2,:)>=-(y2/x2)*coord(1,:)+y1+y2*(1+x1/x2)-0.001))=0;  
+% Q_w=true(1,n_n);
+% Q_w(coord(1,:)<=0.001)=0;
+% Q_w(coord(1,:)>=x1+x2+x3-0.001)=0;
+% Q_w(coord(2,:)>=y1+y2-0.001)=0;
+% Q_w((coord(2,:)>=y1-0.001)&(coord(1,:)>=x1+x2-0.001))=0;
+% Q_w((coord(2,:)>=y1-0.001)&(coord(2,:)>=-(y2/x2)*coord(1,:)+y1+y2*(1+x1/x2)-0.001))=0;  
 
 % Nonhomogeneous part of the pressure (problem dependent)
-y21=2;            % height of the water level next to the slope
-y22=6;            % difference between water levels on oposite slope sides
-y23=2;            % height of the slope above underground water level
-pw_D=zeros(1,n_n);
-x_bar=x1+(1-y21/y2)*x2;
-part1=(coord(1,:)<x_bar)&(coord(2,:)<=-(y22/x_bar)*coord(1,:)+y1+y21+y22);
-part2=coord(1,:)>=x_bar;
-pw_D(part1)=grho*((y22/x_bar)*(x_bar-coord(1,part1))+y1+y21-coord(2,part1));
-pw_D(part2)=grho*(y1+y21-coord(2,part2)); 
+% y21=2;            % height of the water level next to the slope
+% y22=6;            % difference between water levels on oposite slope sides
+% y23=2;            % height of the slope above underground water level
+% pw_D=zeros(1,n_n);
+% x_bar=x1+(1-y21/y2)*x2;
+% part1=(coord(1,:)<x_bar)&(coord(2,:)<=-(y22/x_bar)*coord(1,:)+y1+y21+y22);
+% part2=coord(1,:)>=x_bar;
+% pw_D(part1)=grho*((y22/x_bar)*(x_bar-coord(1,part1))+y1+y21-coord(2,part1));
+% pw_D(part2)=grho*(y1+y21-coord(2,part2)); 
+
+[Q_w, pw_D] = MESH.darcy_boundary_3D_hetero(coord, surf, triangle_labels, grho);
 
 % Computation on the pore pressure and its gradient
 [pw, grad_p, mater_sat]=SEEPAGE.seepage_problem_3D...
@@ -142,7 +146,7 @@ materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props
 
 % Material parameters at integration points.
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
-      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
+      ASSEMBLY.heterogenous_materials(material*0, saturation, n_q, materials);
 
 %% Assembling for mechanics
 
