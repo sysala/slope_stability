@@ -93,9 +93,9 @@ These codes are focused on the solution of slope stability problems in 2D and 3D
 
 The used methods and algorithms have been developed within the following papers:
 
-S. Sysala, M. Béreš, S. Bérešová, T. Luber: Advanced continuation and iterative methods for slope stability analysis in 3D. Submitted in 2025.
+S. Sysala, M. Béreš, S. Bérešová, T. Luber, Z. Michalec: Advanced continuation and iterative methods for slope stability analysis in 3D, Computers & Structures 315, 2025, 107842, https://doi.org/10.1016/j.compstruc.2025.107842
 
-S. Sysala, M. Béreš, S. Bérešová, J. Haslinger, J. Kružík, T. Luber: Convex Optimization Problems Inspired by Geotechnical Stability Analysis. Submitted in 2025, http://arxiv.org/abs/2312.12170.
+S. Sysala, M. Béreš, S. Bérešová, J. Haslinger, J. Kružík, T. Luber: Convex Optimization Problems Inspired by Geotechnical Stability Analysis. SIAM Journal on Optimization 35(3), 1993-2016, 2025, https://doi.org/10.1137/25M1723177 
 
 J. Karátson, S. Sysala, M. Béreš: Quasi-Newton iterative solution approaches for nonsmooth elasto-plastic problems. CAMWA 178, 61-80, 2025, [doi:10.1016/j.camwa.2024.11.022](https://doi.org/10.1016/j.camwa.2024.11.022)
 
