@@ -11,7 +11,7 @@ function [Q_darcy, pw_D] = darcy_boundary_3D_hetero(coord, surf, triangle_labels
 n_n = size(coord,2);
 
 z_water_height=35;
-z_solid_water_level=50;
+z_solid_water_level=55;
 
 
 % name2tag = {'bottom_layer': 1, 'middle_layer': 2, 'top_layer': 3, 'cover': 4,

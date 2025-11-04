@@ -1,4 +1,4 @@
-function fig = plot_pore_pressure_3D(pw, coord, elem)
+function fig = plot_pore_pressure_3D(pw, coord, surf)
 %--------------------------------------------------------------------------
 % plot_pore_pressure_3D plots the 3D pore pressure field on the mesh.
 %
@@ -25,7 +25,8 @@ function fig = plot_pore_pressure_3D(pw, coord, elem)
 % coord(2,:) = coord(2,:) - min(coord(2,:));
 
 % Plot displacements with color representing the norm of the displacement.
-fig = VIZ.draw_quantity_3D(coord, elem, zeros(size(coord)), pw);
+fig = VIZ.draw_quantity_3D(coord, surf, zeros(size(coord)), pw);
+VIZ.compute_bounding_edges(surf, coord, 1);
 title("Pore pressures [kPa]")
 drawnow
 end

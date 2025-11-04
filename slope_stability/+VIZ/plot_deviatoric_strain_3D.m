@@ -1,4 +1,4 @@
-function fig = plot_deviatoric_strain_3D(U, coord, elem, B)
+function fig = plot_deviatoric_strain_3D(U, coord, elem,surf, B)
 %--------------------------------------------------------------------------
 % plot_deviatoric_strain_3D visualizes the deviatoric strain field on a 3D mesh.
 %
@@ -31,5 +31,6 @@ function fig = plot_deviatoric_strain_3D(U, coord, elem, B)
 % Here, the third input (quantity to be plotted on the faces) is set to 0,
 % so that only the scalar values (values_boundary) determine the color.
 fig = VIZ.draw_quantity_3D(coord_boundary, boundary_faces, 0 * values_boundary, values_boundary);
+VIZ.compute_bounding_edges(surf, coord, 1);
 title("Deviatoric strain")
 end

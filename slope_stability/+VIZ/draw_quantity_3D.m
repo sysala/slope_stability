@@ -58,10 +58,12 @@ box on;
 axis equal;  % Maintain equal aspect ratios.
 hold off;
 
+% VIZ.compute_bounding_edges(surf, coord, 1);
 % Set camera parameters for an orthographic projection.
 ax2 = gca;
+set(ax2,'Xdir','reverse');
 cameraParams = struct( ...
-    'Position', [-1 4 -4] .* max(coord, [], 2)' * 2, ...
+    'Position', [1 4 -4] .* max(coord, [], 2)' * 2, ...
     'Target', max(coord, [], 2)' / 2, ...
     'UpVector', [0 180 0], ...
     'ViewAngle', 0, ...
@@ -72,6 +74,9 @@ set(ax2, 'CameraTarget', cameraParams.Target);
 set(ax2, 'CameraUpVector', cameraParams.UpVector);
 set(ax2, 'CameraViewAngle', cameraParams.ViewAngle);
 set(ax2, 'Projection', cameraParams.Projection);
+
+
+
 
 drawnow;
 

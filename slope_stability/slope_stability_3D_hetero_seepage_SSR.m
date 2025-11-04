@@ -35,7 +35,12 @@ Davis_type='B';
 % If gamma_sat and gamma_unsat are not distinguished, use the same values 
 % for these parameters. Each row of the table represents one subdomain. If 
 % a homogeneous body is considered, only one row is prescribed.
-mat_props = [6, 45, 0, 40000, 0.3, 20, 20];  
+%mat_props = [6, 45, 0, 40000, 0.3, 20, 20];  
+mat_props = [15, 38,  0, 50000, 0.30, 22, 22;  % General foundation
+             10, 35,  0, 50000, 0.30, 21, 21;  % Relatively weak foundation
+             18, 32,  0, 20000, 0.33, 20, 20; % General slope mass
+             15, 30,  0, 10000, 0.33, 19, 19;  % Cover layer
+             ];
 
 % Hydraulic conductivity for each subdomain [m/s]
 k = 1.0 ;
@@ -69,8 +74,8 @@ k = 1.0 ;
 %     otherwise
 %         error('Bad choice of element type');
 % end
-[coord, elem, surf, Q, material, triangle_labels] = MESH.load_mesh_gmsh_waterlevels("meshes/slope_with_waterlevels.h5");
-
+[coord, elem, surf, Q, material, triangle_labels] = MESH.load_mesh_gmsh_waterlevels( ...
+    "meshes/slope_with_waterlevels_concave_L2.h5");
 
 % number of nodes, elements and integration points + print
 n_n=size(coord,2);
@@ -156,7 +161,7 @@ materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props
 % Assemble the vector of volume forces.
 % Volume forces at integration points, size (f_V_int) = (3, n_int)
 f_V_int = [-grad_p(1,:); -grad_p(2,:)-gamma; -grad_p(3,:)];
-% f_V_int = [zeros(1, n_int); -gamma; zeros(1, n_int)];
+%f_V_int = [zeros(1, n_int); -gamma; zeros(1, n_int)];
 % Compute the vector of volume forces.
 f_V = ASSEMBLY.vector_volume_3D(elem, coord, f_V_int, HatP, WEIGHT);
 
@@ -166,7 +171,7 @@ f_V = ASSEMBLY.vector_volume_3D(elem, coord, f_V_int, HatP, WEIGHT);
 lambda_init = 0.7;              % Initial lower bound of lambda
 d_lambda_init = 0.1;            % Initial increment of lambda
 d_lambda_min = 1e-5;            % Minimal increment of lambda
-d_lambda_diff_scaled_min = 0.001;% Minimal rate of increment of lambda
+d_lambda_diff_scaled_min = 0.005;% Minimal rate of increment of lambda
 omega_max_stop = 7e7;           % Maximum omega, then stop
 step_max = 100;                 % Maximum number of continuation steps
 
@@ -239,12 +244,31 @@ end
 
 %% Postprocessing - visualization of selected results for indirect continuation
 if indirect_on
-    % VIZ.draw_saturation_2D(coord,elem,mater_sat);
+    % show mesh
     VIZ.draw_mesh_3D(coord,surf);
-    VIZ.draw_quantity_3D_old(coord,surf,zeros(size(coord)),pw,x1,x2,x3,y1,y2,z);
-    % VIZ.plot_pore_pressure_3D(pw,coord,elem);
-    VIZ.plot_displacements_3D(U3, coord, elem);
-    VIZ.plot_deviatoric_strain_3D(U3, coord, elem, B);
+    drawnow
+    pause(0.5)
+    % show pore pressure
+    VIZ.plot_pore_pressure_3D(pw,coord, surf);
+    drawnow
+    pause(0.5)
+    % show displacement
+    VIZ.plot_displacements_3D(U3, coord, elem, surf, 0.05*max(abs(coord(:)))/max(abs(U3(:))));
+    drawnow
+    pause(0.5)
+    % show deviatoric stress
+    VIZ.plot_deviatoric_strain_3D(U3, coord, elem, surf, B);
+    % edit colorbar of deviatoric stress, and keep the edit for slices
+    cl = caxis(gca);
+    clim = [cl(1), 0.25*cl(2)];
+    caxis(clim);
+    drawnow
+    pause(0.5)
+    % visualisation of slices
+    plane_vals = {[], [35, 40, 55], [21.6506, 43.3013]};
+    [figs, info] = VIZ.plot_deviatoric_norm_slices(B, U3, elem, coord, Xi, surf, plane_vals, 1, clim);
+
+
     % Visualization of the curve: omega -> lambda for indirect continuation.
     figure; hold on; box on; grid on;
     plot(omega_hist3, lambda_hist3, '-o');

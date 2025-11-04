@@ -45,4 +45,5 @@ coord = double(node([1 3 2], :));
 Q = Q([1 3 2], :);
 
 elem = double(tetra_cells);
+elem=elem([1,2,3,4,5,6,7,10,9,8],:);
 surf = double(triangle_cells);
