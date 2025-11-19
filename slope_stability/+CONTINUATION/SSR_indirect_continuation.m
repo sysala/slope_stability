@@ -13,7 +13,10 @@ function [U, lambda_hist, omega_hist, Umax_hist] = SSR_indirect_continuation(...
 %
 %       F_lambda(U) = f   and   f' * U = omega,
 %
-% where F_lambda(U) is the internal force vector for a given lambda.
+% where F_lambda(U) is the internal force vector for a given lambda. This
+% system is primarily solved by the Newton method. Alternative methods 
+% (e.g., bisection or tangent methods w.r.t. lambda) are provided as 
+% commented-out code.
 %
 % The algorithm updates lambda and omega adaptively, storing the history of 
 % computed values for further analysis.
@@ -50,7 +53,7 @@ omega_hist = zeros(1, 1000);     % History of omega values.
 Umax_hist  = zeros(1, 1000);      % History of maximum displacement values.
 
 % First two steps of the continuation method.
-[U_old, U, omega_old, omega, lambda] = CONTINUATION.init_phase_SSR_indirect_continuation(...
+[U_old, U, omega_old, omega, lambda_old, lambda] = CONTINUATION.init_phase_SSR_indirect_continuation(...
     lambda_init, d_lambda_init, d_lambda_min, ...
     it_newt_max, it_damp_max, tol, r_min, K_elast, Q, f, ...
     constitutive_matrix_builder, linear_system_solver.copy());
@@ -59,7 +62,7 @@ linear_system_solver.expand_deflation_basis(U_old(Q));
 
 % Storage of the computed values.
 omega_hist(1) = omega_old;
-lambda_hist(1) = lambda_init;
+lambda_hist(1) = lambda_old;
 omega_hist(2) = omega;
 lambda_hist(2) = lambda;
 Umax_hist(1) = max(sqrt(sum(U_old.^2, 1)));
@@ -67,6 +70,11 @@ Umax_hist(2) = max(sqrt(sum(U.^2, 1)));
 
 % Other initial data.
 d_omega = omega - omega_old;     % Current increment of omega.
+
+% Check whether omega_max_stop is not too low
+if omega_max_stop<omega + d_omega
+    error('Too small value of omega_max_stop. It is necessary to increase this input quantinty.')
+end
 
 %
 % While cycle over the parameter omega.
@@ -88,7 +96,7 @@ while true
 
     % Solvers for the system F_lambda(U) = f, f'*U = omega_it.
     % a) Newton's method
-    [U_it, lambda_it, flag, ~] = NEWTON.newton_ALG5(U_ini, omega_it, lambda, ...
+    [U_it, lambda_it, flag, ~] = NEWTON.newton_ind_SSR(U_ini, omega_it, lambda, ...
         it_newt_max, it_damp_max, tol, r_min, K_elast, Q, f, ...
         constitutive_matrix_builder, linear_system_solver.copy());
 

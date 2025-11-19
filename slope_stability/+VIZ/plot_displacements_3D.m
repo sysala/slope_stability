@@ -1,4 +1,4 @@
-function fig = plot_displacements_3D(U, coord, elem, scale_factor)
+function fig = plot_displacements_3D(U, coord, elem,surf, scale_factor)
 %--------------------------------------------------------------------------
 % plot_displacements_3D plots the 3D displacement field on the mesh.
 %
@@ -56,9 +56,10 @@ coord(2,:) = coord(2,:) - min(coord(2,:));
 coord(3,:) = coord(3,:) - min(coord(3,:));
 
 % Compute a scaling factor based on the maximum boundary value and mesh size.
-scale = max((max(coord(:)) * scale_factor) / values_boundary(:));
+scale = scale_factor;
 
 % Plot displacements with color representing the norm of the displacement.
 fig = VIZ.draw_quantity_3D(coord_boundary, boundary_faces, [U_x_face; U_y_face; U_z_face] * scale, values_boundary);
+VIZ.compute_bounding_edges(surf, coord, 1);
 title("Displacements (color = norm of displacement)")
 end

@@ -1,8 +1,9 @@
-function [coord_mid, elem_mid]= midpoints_P4(coord,elem)
+function [coord_mid,elem_mid,surf]=midpoints_P4(coord,elem)
 
-%  The aim of this function is to find numbers of midpoints and their
-%  coordinates. It enables us to use the mesh for P4 elements.
-%
+%  The aim of this function is to complete basic mesh data (coord, elem)
+%  with infomation about midpoints and surface nodes. P4 elements are
+%  considered.
+% 
 %  input data:
 %    coord - coordinates of the vertices, size(coord)=(2,n_n) where n_n is 
 %            a number of vertices
@@ -11,9 +12,11 @@ function [coord_mid, elem_mid]= midpoints_P4(coord,elem)
 %           ordering of the nodes creating a particular element. 
 %
 %  output data:
-%    coord_mid - coordinates of midpoints, size(coord)=(2,3*n_e+3*n_edge)
-%    elem_mid - 12 x n_e array containing numbers of midpoints in each
+%    coord_mid - coordinates of midpoints
+%    elem_mid - 10 x n_e array containing numbers of midpoints in each
 %               element
+%    surf    -  5 x n_surf arrays containg numbers of nodal 
+%               points defining edges of the domain boundary 
 %
 % ======================================================================
 %
@@ -25,9 +28,11 @@ function [coord_mid, elem_mid]= midpoints_P4(coord,elem)
   % predefinition of unknown arrays
   coord_mid=zeros(2,10*n_e);
   elem_mid=zeros(12,n_e);
+  surf=zeros(5,n_e);
   
   % for cyclus over elements
-  ind=0; % enlarging index specifying midpoints
+  ind=0;   % enlarging index specifying midpoints
+  ind_s=0; % enlarging index specifying surf
   for i=1:n_e
       
       % vertices defining the i-th element 
@@ -79,6 +84,9 @@ function [coord_mid, elem_mid]= midpoints_P4(coord,elem)
               elem_mid(8,j)=n_n+ind+3;
               elem_mid(9,j)=n_n+ind+2;
           end
+       else
+          ind_s=ind_s+1;  
+          surf(:,ind_s)=[V1; V2; n_n+ind+1; n_n+ind+2; n_n+ind+3];
        end
        ind=ind+3;
       end % if (for the edge V1-V2)
@@ -115,6 +123,9 @@ function [coord_mid, elem_mid]= midpoints_P4(coord,elem)
               elem_mid(8,j)=n_n+ind+3;
               elem_mid(9,j)=n_n+ind+2;
           end
+       else
+          ind_s=ind_s+1;  
+          surf(:,ind_s)=[V1; V2; n_n+ind+1; n_n+ind+2; n_n+ind+3];
        end
        ind=ind+3;
       end % if (for the edge V2-V3)
@@ -151,6 +162,9 @@ function [coord_mid, elem_mid]= midpoints_P4(coord,elem)
               elem_mid(8,j)=n_n+ind+3;
               elem_mid(9,j)=n_n+ind+2;
           end
+       else
+          ind_s=ind_s+1;  
+          surf(:,ind_s)=[V1; V2; n_n+ind+1; n_n+ind+2; n_n+ind+3];
        end
        ind=ind+3;
       end % if (for the edge V3-V1)
@@ -158,5 +172,6 @@ function [coord_mid, elem_mid]= midpoints_P4(coord,elem)
   end % for cyclus over elements
   
   coord_mid=coord_mid(:,1:ind);
-
+  surf=surf(:,1:ind_s);
+ 
 end

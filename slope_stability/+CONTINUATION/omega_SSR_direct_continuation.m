@@ -58,7 +58,7 @@ if flag == 1
 end
 
 % Compute the integrated potential Psi and cost function J for the current U.
-Psi_integrated = constitutive_matrix_builder.potential(U);
+Psi_integrated = constitutive_matrix_builder.potential_energy(U);
 J = Psi_integrated - f(Q)' * U(Q);
 
 % Compute the minimizer U_eps for the perturbed parameter (lambda - eps).
@@ -74,7 +74,7 @@ if flag == 1
 end
 
 % Compute the cost function J_eps for U_eps.
-Psi_integrated = constitutive_matrix_builder.potential(U_eps);
+Psi_integrated = constitutive_matrix_builder.potential_energy(U_eps);
 J_eps = Psi_integrated - f(Q)' * U_eps(Q);
 
 % Compute omega as the numerical derivative of J with respect to lambda.

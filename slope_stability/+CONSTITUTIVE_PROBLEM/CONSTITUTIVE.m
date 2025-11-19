@@ -306,15 +306,14 @@ classdef CONSTITUTIVE < handle & matlab.mixin.Copyable
             [F, K_tangent] = obj.build_F_K_tangent();
         end
 
-        function Psi_integrated = potential(obj, U)
+        function Psi_integrated = potential_energy(obj, U)
             %--------------------------------------------------------------------------
             % potential Computes the integrated potential.
             %
-            %   Psi_integrated = obj.potential(U)
+            %   Psi_integrated = obj.potential_energy(U)
             %
-            % This method calculates the potential function Psi at integration
-            % points from the strain field and integrates it using the quadrature
-            % weights.
+            % This method calculates the total potential energy via
+            % its contributions Psi calculated at each integration points
             %
             % The runtime is recorded.
             %--------------------------------------------------------------------------

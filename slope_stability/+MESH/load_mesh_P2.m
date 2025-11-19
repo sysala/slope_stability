@@ -1,4 +1,4 @@
-function [coord, elem, surf, Q, material] = load_mesh_P2(file_path, boundary_type)
+function [coord, elem, surf, Q, material, boundary] = load_mesh_P2(file_path, boundary_type)
 %--------------------------------------------------------------------------
 % load_mesh_P2 loads mesh data for quadratic (P2) finite elements.
 %

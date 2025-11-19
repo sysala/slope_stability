@@ -1,13 +1,13 @@
 %%  Heterogeneous slope and its stability  (via LL method)
 % ======================================================================
-%  This program solves a 3D slope stability problem for a homogeneous slope
-%  using the modified shear strength reduction method in a limit load analysis.
-%  The problem is based on the Mohr-Coulomb yield criterion with one Davis 
-%  approach (user-selectable: 'A', 'B', or 'C') and standard finite elements 
-%  (only P2 elements are available in this example) on a uniform mesh. For P2 
-%  elements, the 11-point Gauss quadrature is used for volume integration.
-%  To determine the safety factor (limit load factor t*), an indirect 
-%  continuation technique is applied.
+%  This program solves a 3D slope stability problem by the limit
+%  load (LL) method described in (Sysala et al., CAS 2025). The Mohr-
+%  Coulomb yield criterion, Davis approach, standard finite elements 
+%  (either P1 or P2 elements) and meshes with different densities are
+%  considered. For P2 elements, the 11-point Gauss quadrature
+%  is used. To find the safety factor of the LL method, the indirect 
+%  continuation technique is used. A benchmark with a heterogeneous slope
+%  from (Sysala et al., CAS 2025) is considered.
 %
 % ======================================================================
 
@@ -17,6 +17,24 @@ elem_type = 'P2';
 
 % Davis_type - choice of Davis' approach; available choices: 'A','B','C'
 Davis_type = 'B';
+
+% Material parameters for each subdomain. In the following table, we
+% specify in each column the following material parameters, respectively:
+% [c0, phi, psi, young, poisson, gamma_sat, gamma_unsat], where
+%    c0 ... Cohesion (c)
+%    phi ... Friction angle (phi in degrees)
+%    psi ... Dilatancy angle (psi in degrees)
+%    young ... Young's modulus (E)
+%    poisson ...  Poisson's ratio (nu)
+%    gamma_sat ...   Specific weight - saturated (gamma_sat in kN/m^3)
+%    gamma_unsat ... Specific weight - unsaturated (gamma_unsat in kN/m^3)
+% If gamma_sat and gamma_unsat are not distinguished, use the same values 
+% for these parameters. Each row of the table represents one subdomain. If 
+% a homogeneous body is considered, only one row is prescribed.
+mat_props = [15, 30,  0, 10000, 0.33, 19, 19;  % Cover layer
+             15, 38,  0, 50000, 0.30, 22, 22;  % General foundation
+             10, 35,  0, 50000, 0.30, 21, 21;  % Relatively weak foundation
+             18, 32,  0, 20000, 0.33, 20, 20]; % General slope mass
 
 
 %% Data from the reference element
@@ -39,6 +57,7 @@ switch(elem_type)
         error("Prepared meshes are only for P2 elements.")
     case 'P2'
         [coord, elem, surf, Q, material_identifier] = MESH.load_mesh_P2(file_path);
+        % material_identifier=ones(1,n_e) for a homogeneous body
         fprintf('P2 elements: \n')
     otherwise
         error('Bad choice of element type');
@@ -58,26 +77,27 @@ fprintf('  number of integration points = %d \n', n_int);
 
 
 %% Material parameters at integration points
-% (Unified treatment for homogeneous and heterogeneous slopes)
-% Define material properties for each domain.
+% Fields with prescribed material properties
 fields = {'c0',      ... % Cohesion (c)
           'phi',     ... % Friction angle (phi in degrees)
           'psi',     ... % Dilatancy angle (psi in degrees)
           'young',   ... % Young's modulus (E)
           'poisson', ... % Poisson's ratio (nu)
-          'gamma'};      % Unit weight (gamma in kN/m^3)
-
-% Material properties: [c0, phi, psi, young, poisson, gamma]
-mat_props = [15, 30,  0, 10000, 0.33, 19;  % Cover layer
-             15, 38,  0, 50000, 0.30, 22;  % General foundation
-             10, 35,  0, 50000, 0.30, 21;  % Relatively weak foundation
-             18, 32,  0, 20000, 0.33, 20]; % General slope mass
+          'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
+          'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
 
 % Convert properties to structured format.
 materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props, 2), 'UniformOutput', false);
 
+% saturation - a prescribed logical array indicating integration points 
+%              where the body is saturated. If gamma_sat and gamma_unsat 
+%              are the same, set saturation=true(1,n_int). Otherwise,
+%              this logical array is derived from a given phreatic surface.
+saturation = true(1,n_int);
+
 % Material parameters at integration points.
-[c0, phi, psi, shear, bulk, lame, gamma] = ASSEMBLY.heterogenous_materials(material_identifier, n_q, materials);
+[c0, phi, psi, shear, bulk, lame, gamma] = ...
+      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 
 %% Assembly of the elastic matrix and volume forces vector
@@ -92,7 +112,7 @@ f_V_int = [zeros(1, n_int); -gamma; zeros(1, n_int)];
 f = ASSEMBLY.vector_volume_3D(elem, coord, f_V_int, HatP, WEIGHT);
 
 
-%% Input parameters for continuation (for the SSR method)
+%% Input parameters for the indirect continuation method
 
 d_t_min = 1e-3;                   % Minimal increment of t.
 step_max = 100;                   % Maximum number of continuation steps.
@@ -124,9 +144,9 @@ n_strain = dim * (dim + 1) / 2;
 constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi, Davis_type, shear, bulk, lame, WEIGHT, n_strain, n_int, dim);
 
 %--------------------------------------------------------------------------
-%% Computation of the factor of safety (limit load) for the SSR method
+%% Computation of the limit load factor by the indirect continuation
 
-fprintf('\n Indirect continuation method\n');
+fprintf('\n Indirect continuation method for the LL method\n');
 tic;
 
 % Compute the elastic displacement field.
@@ -141,7 +161,7 @@ omega_el = f(Q)' * U_elast(Q);          % Work of external forces.
 d_omega_ini = omega_el / 2;
 U_elast = U_elast / 2;
 
-% Run the indirect continuation method for limit load analysis.
+% Run the indirect continuation method for the LL method.
 [U, t_hist, omega_hist, U_max_hist] = CONTINUATION.LL_indirect_continuation(...
     d_omega_ini, d_t_min, step_max, LL_omega_max, ...
     it_newt_max, it_damp_max, tol, r_min, K_elast, U_elast, Q, f, ...
@@ -154,9 +174,9 @@ fprintf("Running_time = %f \n", time_run);
 
 VIZ.plot_displacements_3D(U, coord, elem);
 VIZ.plot_deviatoric_strain_3D(U, coord, elem, B);
-% Visualization of the curve: omega -> t.
+% Visualization of the continuation curve: omega -> t.
 figure; hold on; box on; grid on;
 plot(omega_hist, t_hist, '-o');
-title('Indirect continuation method', 'Interpreter', 'latex')
+title('Indirect continuation method for the LL method', 'Interpreter', 'latex')
 xlabel('control variable - $\omega$', 'Interpreter', 'latex');
-ylabel('limit load factor - $t$', 'Interpreter', 'latex');
+ylabel('load factor - $t$', 'Interpreter', 'latex');

@@ -1,13 +1,14 @@
 %%  Homogeneous slope and its stability (via SSR methods)
 % =========================================================================
-%
 %  This program solves a 2D slope stability problem by the modified shear
-%  strength reduction method suggested in (Sysala et al. 2021). It considers
-%  the Mohr-Coulomb yield criterion, three Davis approaches, standard finite
-%  elements (either P1 or P2 elements), and uniform meshes with different
-%  densities. For P2 elements, the 7-point Gauss quadrature is used.
-%  To find the safety factor of the SSR method, two continuation techniques
-%  are available: the direct and the indirect techniques.
+%  strength reduction (SSR) method described in (Sysala et al., CAS 2025). 
+%  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
+%  standard finite elements (either P1 or P2 elements) and meshes
+%  with different densities are considered. For P2 elements, the 7-point 
+%  Gauss quadrature is used. To find the safety factor of the SSR method, 
+%  two continuation techniques are available: direct and indirect. 
+%  A benchmark with a homogeneous slope is considered. It is possible to
+%  change geometrical parameters and mesh density.
 %
 % =========================================================================
 
@@ -19,31 +20,31 @@ elem_type = 'P2';
 % Davis_type - choice of Davis' approach; available choices: 'A', 'B', 'C'
 Davis_type = 'B';
 
-%% Geometrical parameters
+% Material parameters for each subdomain. In the following table, we
+% specify in each column the following material parameters, respectively:
+% [c0, phi, psi, young, poisson, gamma_sat, gamma_unsat], where
+%    c0 ... Cohesion (c)
+%    phi ... Friction angle (phi in degrees)
+%    psi ... Dilatancy angle (psi in degrees)
+%    young ... Young's modulus (E)
+%    poisson ...  Poisson's ratio (nu)
+%    gamma_sat ...   Specific weight - saturated (gamma_sat in kN/m^3)
+%    gamma_unsat ... Specific weight - unsaturated (gamma_unsat in kN/m^3)
+% If gamma_sat and gamma_unsat are not distinguished, use the same values 
+% for these parameters. Each row of the table represents one subdomain. If 
+% a homogeneous body is considered, only one row is prescribed.
+mat_props = [6, 45, 0, 40000, 0.3, 20, 20]; 
+
+% Geometrical parameters
 x1 = 15;         % Length of the body in front of the slope
 x3 = 15;         % Length of the body behind the slope
 y1 = 10;         % Height of the body below the slope
 y2 = 10;         % Height of the slope
-beta = pi/4;     % Slope angle
+beta = 45*pi/180;     % Slope angle
 x2 = y2/tan(beta); % Length of the slope in the x-direction
 
-%% Mesh data
+% Mesh data
 h = 1/1;         % Discretization parameter
-
-%% Strength material parameters
-c0 = 6;                           % Cohesion
-phi = 45*pi/180;                  % Frictional angle
-psi = 0;                          % Dilatancy angle
-
-%% Elastic material parameters (FoS should be independent of these parameters)
-young = 40000;                     % Young's modulus
-poisson = 0.3;                     % Poisson's ratio
-shear = young / (2 * (1 + poisson)); % Shear modulus
-bulk = young / (3 * (1 - 2 * poisson)); % Bulk modulus
-lame = bulk - 2 * shear / 3;        % Lame's coefficient (lambda)
-
-% Specific weight of the material creating a slope
-gamma = 20;
 
 %% Data from the reference element
 
@@ -80,15 +81,31 @@ fprintf('  Number of elements = %d ', n_e);
 fprintf('  Number of edges = %d ', n_ed);
 fprintf('  Number of integration points = %d \n', n_int);
 
+% The array material_identifier for a homogeneous body
+material_identifier = zeros(1,n_e);
+
 %% Material parameters at integration points
-% (For a unified treatment of homogeneous and heterogeneous slopes)
-c0 = c0 * ones(1, n_int);
-phi = phi * ones(1, n_int);
-psi = psi * ones(1, n_int);
-shear = shear * ones(1, n_int);
-bulk = bulk * ones(1, n_int);
-lame = lame * ones(1, n_int);
-gamma = gamma * ones(1, n_int);
+% Fields with prescribed material properties
+fields = {'c0',      ... % Cohesion (c)
+          'phi',     ... % Friction angle (phi in degrees)
+          'psi',     ... % Dilatancy angle (psi in degrees)
+          'young',   ... % Young's modulus (E)
+          'poisson', ... % Poisson's ratio (nu)
+          'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
+          'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
+
+% Convert properties to structured format.
+materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props, 2), 'UniformOutput', false);
+
+% saturation - a prescribed logical array indicating integration points 
+%              where the body is saturated. If gamma_sat and gamma_unsat 
+%              are the same, set saturation=true(1,n_int). Otherwise,
+%              this logical array is derived from a given phreatic surface.
+saturation = true(1,n_int);
+
+% Material parameters at integration points.
+[c0, phi, psi, shear, bulk, lame, gamma] = ...
+      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 %% Assembling of the elastic stiffness matrix
 [K_elast, B, WEIGHT] = ASSEMBLY.elastic_stiffness_matrix_2D(elem, coord, DHatP1, DHatP2, WF, shear, lame);
@@ -100,7 +117,7 @@ f_V_int = [zeros(1, n_int); -gamma];
 % Vector of volume forces
 f_V = ASSEMBLY.vector_volume_2D(elem, coord, f_V_int, HatP, WEIGHT);
 
-%% Input parameters for continuation (for the SSR method)
+%% Input parameters for the continuation methods
 
 lambda_init = 0.9;              % Initial lower bound of lambda
 d_lambda_init = 0.1;            % Initial increment of lambda
@@ -136,11 +153,11 @@ constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi,
 %--------------------------------------------------------------------------
 %% Computation of the factor of safety for the SSR method
 
-alg2on = 1; % Use direct continuation method (Algorithm 2).
-alg3on = 1; % Use indirect continuation method (Algorithm 3).
+direct_on = 1; % Use direct continuation method.
+indirect_on = 1; % Use indirect continuation method.
 
-if alg2on  % Direct continuation method - Algorithm 2.
-    fprintf('\n Direct continuation method - Algorithm 2\n');
+if direct_on  % Direct continuation method.
+    fprintf('\n Direct continuation method\n');
     tic;
     [U2, lambda_hist2, omega_hist2, Umax_hist2] = CONTINUATION.SSR_direct_continuation(...
         lambda_init, d_lambda_init, d_lambda_min, d_lambda_diff_scaled_min, step_max, ...
@@ -149,8 +166,8 @@ if alg2on  % Direct continuation method - Algorithm 2.
     time_run = toc;
     fprintf("Running_time = %f \n", time_run);
 end
-if alg3on     % Indirect continuation method - Algorithm 3.
-    fprintf('\n Indirect continuation method - Algorithm 3 \n');
+if indirect_on     % Indirect continuation method.
+    fprintf('\n Indirect continuation method\n');
     tic;
     [U3, lambda_hist3, omega_hist3, Umax_hist3] = CONTINUATION.SSR_indirect_continuation(...
         lambda_init, d_lambda_init, d_lambda_min, d_lambda_diff_scaled_min, step_max, ...
@@ -160,11 +177,11 @@ if alg3on     % Indirect continuation method - Algorithm 3.
     fprintf("Running_time = %f \n", time_run);
 end
 
-%% Postprocessing - visualization of selected results for ALG2
-if alg2on
+%% Postprocessing - visualization of selected results for direct continuation
+if direct_on
     VIZ.plot_deviatoric_strain_2D(U2,coord,elem,B);
     VIZ.plot_displacements_2D(U2,coord,elem);
-    % Visualization of the curve: omega -> lambda for Alg2.
+    % Visualization of the curve: omega -> lambda for direct continuation.
     figure; hold on; box on; grid on;
     plot(omega_hist2, lambda_hist2, '-o');
     title('Direct continuation method', 'Interpreter', 'latex')
@@ -172,11 +189,11 @@ if alg2on
     ylabel('strength reduction factor - $\lambda$', 'Interpreter', 'latex');
 end
 
-%% Postprocessing - visualization of selected results for ALG3
-if alg3on
+%% Postprocessing - visualization of selected results for indirect continuation
+if indirect_on
     VIZ.plot_deviatoric_strain_2D(U3,coord,elem,B);
     VIZ.plot_displacements_2D(U3,coord,elem);
-    % Visualization of the curve: omega -> lambda for Alg3.
+    % Visualization of the curve: omega -> lambda for indirect continuation.
     figure; hold on; box on; grid on;
     plot(omega_hist3, lambda_hist3, '-o');
     title('Indirect continuation method', 'Interpreter', 'latex')

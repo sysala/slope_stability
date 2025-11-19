@@ -19,9 +19,6 @@ function [U, lambda_hist, omega_hist, Umax_hist, work_hist] = SSR_direct_continu
 % proceeds with continuation steps. At each step, if the solver fails or if 
 % the computed omega does not increase, the increment in lambda is reduced.
 %
-% Alternative methods (e.g., bisection or tangent methods w.r.t. lambda) are 
-% provided as commented-out code.
-%
 % INPUTS:
 %   lambda_init              - Initial value of the parameter lambda.
 %   d_lambda_init            - Initial increment of lambda.
@@ -56,7 +53,7 @@ Umax_hist = zeros(1, 1000);      % History of maximum displacement values.
 work_hist = zeros(1, 1000);
 
 % First two steps of the continuation method.
-[U, omega_old, omega, lambda, U_old] = CONTINUATION.init_phase_SSR_direct_continuation(...
+[U_old, U, omega_old, omega, lambda_old, lambda] = CONTINUATION.init_phase_SSR_direct_continuation(...
     lambda_init, d_lambda_init, d_lambda_min, ...
     it_newt_max, it_damp_max, tol, eps, r_min, K_elast, Q, f, ...
     constitutive_matrix_builder, linear_system_solver);
@@ -64,7 +61,7 @@ linear_system_solver.expand_deflation_basis(U(Q));
 
 % Storage of the computed values.
 omega_hist(1) = omega_old;
-lambda_hist(1) = lambda_init;
+lambda_hist(1) = lambda_old;
 omega_hist(2) = omega;
 lambda_hist(2) = lambda;
 Umax_hist(1) = max(sqrt(sum(U.^2, 1)));
@@ -88,7 +85,6 @@ while true
     % Update of the parameter lambda.
     lambda_it = lambda + d_lambda;
     
-    % U_ini = d_omega * (U - U_old) / (omega - omega_old) + U;
     % Computation of U and omega for given lambda_it.
     [U_it, omega_it, flag] = CONTINUATION.omega_SSR_direct_continuation(...
         lambda_it, U, eps, d_lambda, ...
@@ -102,7 +98,6 @@ while true
         d_lambda = d_lambda / 2;
     % elseif d_omega_test > 2*d_omega
     %     % too large increment of omega
-    %     %   U = (U + U_it) / 2;
     %     d_lambda = d_lambda / 2;
     else  % The solver was successful.
         U = U_it;
@@ -131,9 +126,6 @@ while true
         if d_omega_test > 1.5 * d_omega
             d_lambda = d_lambda / 2;
         end
-        % if d_omega_test > 2 * d_omega
-        %     d_lambda = d_lambda / 2;
-        % end
         d_omega = d_omega_test;
     end % if flag
     

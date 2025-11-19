@@ -77,7 +77,7 @@ while true
 
     % Simple initial guess for this step.
     if step > 1
-        U_ini = U; 
+        U_ini = d_omega * (U - U_old) / (omega - omega_old) + U; 
     end
 
     %----------------------------------------------------------------------
