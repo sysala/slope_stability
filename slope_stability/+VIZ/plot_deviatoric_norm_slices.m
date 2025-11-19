@@ -3,7 +3,8 @@ function [figs, slice_info] = plot_deviatoric_norm_slices(B, U, elem, coord, Xi,
 %
 % Inputs
 %   B, U                 -- standard FE strain-displacement matrix and DOFs
-%   elem, coord, Xi      -- mesh (P2 tetra), node coords (3 x N), IPs rule
+%   elem, coord          -- mesh (P2 tetra), node coords (3 x N), IPs rule
+%   Xi                   -- local coordinates of quadrature points, size: (3, n_q)
 %   surf                 -- surface/skin (as used in your VIZ.* utilities)
 %   plane_vals_cell      -- 1x3 cell: {x_vals, y_vals, z_vals}
 %                           e.g., {[], [35 40], []} to slice at y=35 and y=40

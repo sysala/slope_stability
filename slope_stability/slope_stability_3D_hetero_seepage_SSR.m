@@ -1,23 +1,22 @@
-%%  Stability of a homogeneous slope with seepage in 3D
+%%  Stability of a heterogeneous concave slope with seepage in 3D
 % =========================================================================
 %
 %  This program solves a 3D slope stability problem by the modified shear
 %  strength reduction (SSR) method described in (Sysala et al., CAS 2025). 
 %  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
-%  standard finite elements (P1 or P2) and meshes with different densities 
+%  standard finite elements (P2) and meshes with different densities 
 %  are considered. For P2 elements, the 11-point Gauss quadrature is used.
 %  To find the safety factor of the SSR method, two continuation techniques
-%  are available: direct and indirect. A bechmark problem on a homogeneous 
-%  slope with unconfined seepage is considered. It is possible to change
-%  geometrical parameters and mesh density.
+%  are available: direct and indirect. A bechmark problem on a heterogeneous 
+%  concave slope with unconfined seepage is considered. 
 %
 % ======================================================================
 %
 
 %% The main input data
 
-% elem_type - type of finite elements; available choices: 'P1', 'P2'
-elem_type='P2';
+% elem_type - type of finite elements; available choices: 'P2'
+elem_type = 'P2';
 
 % Davis_type - choice of Davis' approach; available choices: 'A','B','C'
 Davis_type='B';
@@ -35,27 +34,15 @@ Davis_type='B';
 % If gamma_sat and gamma_unsat are not distinguished, use the same values 
 % for these parameters. Each row of the table represents one subdomain. If 
 % a homogeneous body is considered, only one row is prescribed.
-%mat_props = [6, 45, 0, 40000, 0.3, 20, 20];  
+
 mat_props = [15, 38,  0, 50000, 0.30, 22, 22;  % General foundation
              10, 35,  0, 50000, 0.30, 21, 21;  % Relatively weak foundation
-             18, 32,  0, 20000, 0.33, 20, 20; % General slope mass
+             18, 32,  0, 20000, 0.33, 20, 20;  % General slope mass
              15, 30,  0, 10000, 0.33, 19, 19;  % Cover layer
              ];
 
 % Hydraulic conductivity for each subdomain [m/s]
-k = 1.0 ;
-
-% Geometrical parameters (choose only integers except beta)
-  x1 = 15 ;        % length of the body in front of the slope
-  x2 = 10 ;        % length of the the slope in x-direction
-  x3 = 15 ;        % length of the body behind the slope
-  y1 = 10 ;        % hight of the body below the slope
-  y2 = 10 ;        % height of the slope
-  z = 5;           % length of the body in z-direction
-  
-% Mesh density parameter (choose only integer!)
-  N_h  = 1;        % h=1/N_h - discretization parameter
-
+k = [1; 1; 1; 1] ; % homogeneous conductivity
   
 %% Data from the reference element
 % quadrature points and weights for volume integration
@@ -63,19 +50,10 @@ k = 1.0 ;
 % local basis functions and their derivatives
 [HatP, DHatP1, DHatP2, DHatP3] = ASSEMBLY.local_basis_volume_3D(elem_type, Xi);
 
-%% Creation of the uniform finite element mesh
-% switch(elem_type)
-%     case 'P1'
-%         [coord, elem, surf, Q] = MESH.mesh_P1_3D(N_h, x1, x2, x3, y1, y2, z);
-%         fprintf('P1 elements: \n')
-%     case 'P2'
-%         [coord, elem, surf, Q] = MESH.mesh_P2_3D(N_h, x1, x2, x3, y1, y2, z);
-%         fprintf('P2 elements: \n')
-%     otherwise
-%         error('Bad choice of element type');
-% end
-[coord, elem, surf, Q, material, triangle_labels] = MESH.load_mesh_gmsh_waterlevels( ...
-    "meshes/slope_with_waterlevels_concave_L2.h5");
+%% Creation/loading of the finite element mesh
+file_path = 'meshes/slope_with_waterlevels_concave.h5';
+[coord, elem, surf, Q, material_identifier, triangle_labels] = ...
+                                MESH.load_mesh_gmsh_waterlevels(file_path);
 
 % number of nodes, elements and integration points + print
 n_n=size(coord,2);
@@ -92,9 +70,6 @@ fprintf('  number of elements =%d ',n_e);
 fprintf('  number of integration points =%d ',n_int);
 fprintf('\n');
 
-% The array material_identifier for a homogeneous body
-material_identifier = zeros(1,n_e);
-
 %% Computation of porous water pressure
 
 % Hydraulic conductivity ateach integration point
@@ -103,26 +78,8 @@ conduct0=SEEPAGE.heter_conduct(material_identifier,n_q,k);
 % specific weight of water in kPa
 grho=9.81;
 
-% Dirichlet boundary conditions for pressure (problem dependent)
-% Q_w=true(1,n_n);
-% Q_w(coord(1,:)<=0.001)=0;
-% Q_w(coord(1,:)>=x1+x2+x3-0.001)=0;
-% Q_w(coord(2,:)>=y1+y2-0.001)=0;
-% Q_w((coord(2,:)>=y1-0.001)&(coord(1,:)>=x1+x2-0.001))=0;
-% Q_w((coord(2,:)>=y1-0.001)&(coord(2,:)>=-(y2/x2)*coord(1,:)+y1+y2*(1+x1/x2)-0.001))=0;  
-
-% Nonhomogeneous part of the pressure (problem dependent)
-% y21=2;            % height of the water level next to the slope
-% y22=6;            % difference between water levels on oposite slope sides
-% y23=2;            % height of the slope above underground water level
-% pw_D=zeros(1,n_n);
-% x_bar=x1+(1-y21/y2)*x2;
-% part1=(coord(1,:)<x_bar)&(coord(2,:)<=-(y22/x_bar)*coord(1,:)+y1+y21+y22);
-% part2=coord(1,:)>=x_bar;
-% pw_D(part1)=grho*((y22/x_bar)*(x_bar-coord(1,part1))+y1+y21-coord(2,part1));
-% pw_D(part2)=grho*(y1+y21-coord(2,part2)); 
-
-[Q_w, pw_D] = MESH.darcy_boundary_3D_hetero(coord, surf, triangle_labels, grho);
+% Dirichlet boundary conditions for seepage (problem dependent)
+[Q_w, pw_D] = MESH.seepage_boundary_3D_hetero(coord, surf, triangle_labels, grho);
 
 % Computation on the pore pressure and its gradient
 [pw, grad_p, mater_sat]=SEEPAGE.seepage_problem_3D...
@@ -151,7 +108,7 @@ materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props
 
 % Material parameters at integration points.
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
-      ASSEMBLY.heterogenous_materials(material*0, saturation, n_q, materials);
+      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 %% Assembling for mechanics
 
@@ -161,7 +118,7 @@ materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props
 % Assemble the vector of volume forces.
 % Volume forces at integration points, size (f_V_int) = (3, n_int)
 f_V_int = [-grad_p(1,:); -grad_p(2,:)-gamma; -grad_p(3,:)];
-%f_V_int = [zeros(1, n_int); -gamma; zeros(1, n_int)];
+% f_V_int = [zeros(1, n_int); -gamma; zeros(1, n_int)];
 % Compute the vector of volume forces.
 f_V = ASSEMBLY.vector_volume_3D(elem, coord, f_V_int, HatP, WEIGHT);
 
@@ -228,17 +185,35 @@ end
 
 %% Postprocessing - visualization of selected results for direct continuation
 if direct_on
-    % VIZ.draw_saturation_2D(coord,elem,mater_sat);
+    % show mesh
     VIZ.draw_mesh_3D(coord,surf);
-    VIZ.draw_quantity_3D_old(coord,surf,zeros(size(coord)),pw,x1,x2,x3,y1,y2,z);
-    % VIZ.plot_pore_pressure_3D(pw,coord,elem);
-    VIZ.plot_displacements_3D(U3, coord, elem);
-    VIZ.plot_deviatoric_strain_3D(U3, coord, elem, B);
-    % Visualization of the curve: omega -> lambda for direct continuation.
+    drawnow
+    pause(0.5)
+    % show pore pressure
+    VIZ.plot_pore_pressure_3D(pw,coord, surf);
+    drawnow
+    pause(0.5)
+    % show displacement
+    VIZ.plot_displacements_3D(U2, coord, elem, surf, 0.05*max(abs(coord(:)))/max(abs(U2(:))));
+    drawnow
+    pause(0.5)
+    % show deviatoric stress
+    VIZ.plot_deviatoric_strain_3D(U2, coord, elem, surf, B);
+    % edit colorbar of deviatoric stress, and keep the edit for slices
+    cl = caxis(gca);
+    clim = [cl(1), 0.25*cl(2)];
+    caxis(clim);
+    drawnow
+    pause(0.5)
+    % visualisation of slices
+    plane_vals = {[], [35, 40, 55], [21.6506, 43.3013]};
+    [figs, info] = VIZ.plot_deviatoric_norm_slices(B, U2, elem, coord, Xi, surf, plane_vals, 1, clim);
+
+    % Visualization of the curve: omega -> lambda for indirect continuation.
     figure; hold on; box on; grid on;
     plot(omega_hist2, lambda_hist2, '-o');
-    title('Direct continuation method', 'Interpreter', 'latex')
-    xlabel('variable - $\xi$', 'Interpreter', 'latex');
+    title('Indirect continuation method', 'Interpreter', 'latex')
+    xlabel('control variable - $\omega$', 'Interpreter', 'latex');
     ylabel('strength reduction factor - $\lambda$', 'Interpreter', 'latex');
 end
 
@@ -267,7 +242,6 @@ if indirect_on
     % visualisation of slices
     plane_vals = {[], [35, 40, 55], [21.6506, 43.3013]};
     [figs, info] = VIZ.plot_deviatoric_norm_slices(B, U3, elem, coord, Xi, surf, plane_vals, 1, clim);
-
 
     % Visualization of the curve: omega -> lambda for indirect continuation.
     figure; hold on; box on; grid on;
