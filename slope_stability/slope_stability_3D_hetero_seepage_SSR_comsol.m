@@ -77,6 +77,14 @@ N_h  = 1;        % h=1/N_h - discretization parameter
 % end
 % [coord, elem, surf, Q, material, triangle_labels] = MESH.load_mesh_gmsh_waterlevels( ...
 %     "meshes/slope_with_waterlevels_concave_L2.h5");
+% Available comsol_mesh*.h5 meshes (nodes / elements):
+%   comsol_mesh.h5: 80226 / 55895
+%
+% Alternative slope_with_waterlevels_concave*.h5 family (nodes / elements):
+%   slope_with_waterlevels_concave.h5:    106520 / 72673
+%   slope_with_waterlevels_concave_L2.h5:  69733 / 48205
+%   slope_with_waterlevels_concave_L3.h5: 244609 / 174745
+%   slope_with_waterlevels_concave_L4.h5: 473420 / 339843
 file_path = 'meshes/comsol_mesh.h5';
 [coord, elem, surf, Q, material, triangle_labels] = MESH.load_mesh_P2(file_path,1);
 
@@ -189,15 +197,19 @@ r_min = 1e-4;                   % Basic minimal regularization of the stiffness 
 
 %% Defining linear solver
 agmg_folder = "agmg"; % Check for AGMG in specified folder
-solver_type = 'DFGMRES_AGMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
+solver_type = 'DFGMRES_HYPRE_BOOMERAMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG", "DFGMRES_HYPRE_BOOMERAMG"
 
 linear_solver_tolerance = 1e-1;
 linear_solver_maxit = 100;
 deflation_basis_tolerance = 1e-3;
 linear_solver_printing = 0;
 
+% Optional BoomerAMG options (used when solver_type contains BOOMERAMG).
+boomeramg_opts = struct('threads', 16, 'print_level', 0, ...
+    'use_as_preconditioner', true);
+
 [linear_system_solver] = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type, ...
-    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q);
+    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q, coord, boomeramg_opts);
 
 
 %% Constitutive problem and matrix builder
@@ -253,6 +265,10 @@ surfKs = sort(surfV,1).';         % sorted rows [i j k]
 isBnd  = ismember(surfKs, bndFs, 'rows');
 
 surf = surf(:,isBnd);             % filtered: only outside surface triangles
+
+if contains(upper(string(solver_type)), "BOOMERAMG")
+    LINEAR_SOLVERS.hypre_boomeramg_clear();
+end
 
 %% Postprocessing - visualization of selected results for direct continuation
 if direct_on

@@ -41,6 +41,13 @@ mat_props = [6, 45, 0, 40000, 0.3, 20, 20];
 
 %% Creation/loading of the finite element mesh
 % For homogeneous slopes, use a mesh file for a uniform homogeneous domain.
+% Available LL_homo*.h5 meshes (nodes / elements):
+%   LL_homo_uni.h5:    25415 / 15770
+%   LL_homo_ada_L1.h5: 26273 / 16813
+%   LL_homo_ada_L2.h5: 47383 / 32366
+%   LL_homo_ada_L3.h5: 89968 / 63277
+%   LL_homo_ada_L4.h5: 172392 / 123529
+%   LL_homo_ada_L5.h5: 334271 / 242871
 % file_path = 'meshes/LL_homo_uni.h5';
 file_path = 'meshes/LL_homo_ada_L1.h5';
 % file_path = 'meshes/LL_homo_ada_L2.h5';
@@ -120,15 +127,19 @@ r_min = 1e-4;                  % Basic minimal regularization of the stiffness m
 
 %% Defining linear solver
 agmg_folder = "agmg"; % Check for AGMG in specified folder
-solver_type = 'DFGMRES_AGMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
+solver_type = 'DFGMRES_AGMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG", "DFGMRES_HYPRE_BOOMERAMG"
 
 linear_solver_tolerance = 1e-1;
 linear_solver_maxit = 100;
 deflation_basis_tolerance = 1e-3;
 linear_solver_printing = 0;
 
+% Optional BoomerAMG options (used when solver_type contains BOOMERAMG).
+boomeramg_opts = struct('threads', 16, 'print_level', 0, ...
+    'use_as_preconditioner', true);
+
 [linear_system_solver] = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type, ...
-    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q);
+    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q, coord, boomeramg_opts);
 
 
 %% Constitutive problem and matrix builder
@@ -163,6 +174,10 @@ U_elast = U_elast / 5;
 
 time_run = toc;
 fprintf("Running_time = %f \n", time_run);
+
+if contains(upper(string(solver_type)), "BOOMERAMG")
+    LINEAR_SOLVERS.hypre_boomeramg_clear();
+end
 
 %% Postprocessing - visualization of selected results
 

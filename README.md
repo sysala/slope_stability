@@ -16,6 +16,9 @@ This repository contains MATLAB scripts for analyzing **slope stability problems
 - `+MESH`: Mesh generators (2D) and mesh loaders (3D).
 - `+NEWTON`: Newton solvers for nonlinear systems.
 - `+VIZ`: Visualization of strains, stresses, displacements, etc.
+- `docs/`: Additional MATLAB binding documentation.
+- `mex/`: C++ sources for MATLAB MEX bindings.
+- `scripts/`: Auxiliary non-entry MATLAB scripts.
 - `meshes/`: Contains prepared 3D meshes in HDF5 format.
 
 
@@ -55,7 +58,7 @@ agmg_folder = 'agmg'; % Make sure this folder exists and contains AGMG
 solver_type = 'DFGMRES_AGMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
 ```
 
-If AGMG is not available set different solver, or the code defaults to using a **direct solver**.
+If AGMG is not available set different solver, or the code falls back to `DFGMRES_ICHOL`.
 
 ---
 
@@ -80,6 +83,44 @@ file_path = 'meshes/SSR_homo_uni.h5';
 
 You can select different levels of mesh adaptivity by commenting/uncommenting the desired file path.
 
+
+
+---
+## 🔬 HYPRE BoomerAMG Usage (OpenMP)
+
+HYPRE BoomerAMG is available in the same slope-stability workflow as AGMG through `LINEAR_SOLVERS.set_linear_solver`.
+
+Build once (downloads/builds HYPRE and builds MATLAB MEX binding):
+
+```bash
+./setup_hypre_mex.sh
+```
+
+Then choose BoomerAMG in a slope-stability script:
+
+```matlab
+%% Defining linear solver
+agmg_folder = 'agmg';
+solver_type = 'DFGMRES_HYPRE_BOOMERAMG'; % also accepted: "DFGMRES_BOOMERAMG", "BOOMERAMG"
+
+linear_solver_tolerance = 1e-1;
+linear_solver_maxit = 100;
+deflation_basis_tolerance = 1e-3;
+linear_solver_printing = 0;
+
+boomeramg_opts = struct('threads', 16, 'print_level', 0, ...
+    'use_as_preconditioner', true);
+
+linear_system_solver = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type, ...
+    linear_solver_tolerance, linear_solver_maxit, ...
+    deflation_basis_tolerance, linear_solver_printing, Q, coord, boomeramg_opts);
+```
+
+Notes:
+- In 3D mechanics problems, passing `coord` and `Q` enables automatic construction of elasticity near-null-space vectors and DOF function mapping for BoomerAMG.
+- For scalar flow-type problems (e.g., Darcy/seepage), pass `coord=[]` (or leave near-null-space empty) and set scalar options as needed.
+- Full binding API and option list: `slope_stability/docs/HYPRE_MATLAB_BINDING.md`.
+- Historical AGMG vs HYPRE benchmark summary: `slope_stability/docs/AGMG_vs_HYPRE_BoomerAMG.md`.
 
 
 ---

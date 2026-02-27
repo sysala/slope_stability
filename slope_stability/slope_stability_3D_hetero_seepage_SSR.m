@@ -4,11 +4,11 @@
 %  This program solves a 3D slope stability problem by the modified shear
 %  strength reduction (SSR) method described in (Sysala et al., CAS 2025).
 %  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
-%  standard finite elements (P2) and meshes with different densities 
+%  standard finite elements (P2) and meshes with different densities
 %  are considered. For P2 elements, the 11-point Gauss quadrature is used.
 %  To find the safety factor of the SSR method, two continuation techniques
-%  are available: direct and indirect. A bechmark problem on a heterogeneous 
-%  concave slope with unconfined seepage is considered. 
+%  are available: direct and indirect. A benchmark problem on a heterogeneous
+%  concave slope with unconfined seepage is considered.
 %
 % ======================================================================
 %
@@ -43,7 +43,7 @@ mat_props = [15, 38,  0, 50000, 0.30, 22, 22;  % General foundation
 
 % Hydraulic conductivity for each subdomain [m/s]
 k = [1; 1; 1; 1] ; % homogeneous conductivity
-  
+
 %% Data from the reference element
 % quadrature points and weights for volume integration
 [Xi, WF] = ASSEMBLY.quadrature_volume_3D(elem_type);
@@ -51,6 +51,11 @@ k = [1; 1; 1; 1] ; % homogeneous conductivity
 [HatP, DHatP1, DHatP2, DHatP3] = ASSEMBLY.local_basis_volume_3D(elem_type, Xi);
 
 %% Creation/loading of the finite element mesh
+% Available slope_with_waterlevels_concave*.h5 meshes (nodes / elements):
+%   slope_with_waterlevels_concave.h5:    106520 / 72673
+%   slope_with_waterlevels_concave_L2.h5:  69733 / 48205
+%   slope_with_waterlevels_concave_L3.h5: 244609 / 174745
+%   slope_with_waterlevels_concave_L4.h5: 473420 / 339843
 file_path = 'meshes/slope_with_waterlevels_concave.h5';
 [coord, elem, surf, Q, material_identifier, triangle_labels] = ...
                                 MESH.load_mesh_gmsh_waterlevels(file_path);
@@ -72,7 +77,7 @@ fprintf('\n');
 
 %% Computation of porous water pressure
 
-% Hydraulic conductivity ateach integration point
+% Hydraulic conductivity at each integration point
 conduct0=SEEPAGE.heter_conduct(material_identifier,n_q,k);
 
 % specific weight of water in kPa
@@ -140,21 +145,27 @@ r_min = 1e-4;                   % Basic minimal regularization of the stiffness 
 
 %% Defining linear solver
 agmg_folder = "agmg"; % Check for AGMG in specified folder
-solver_type = 'DFGMRES_AGMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
+solver_type = 'DFGMRES_HYPRE_BOOMERAMG'; % "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG", "DFGMRES_HYPRE_BOOMERAMG"
 
 linear_solver_tolerance = 1e-1;
 linear_solver_maxit = 100;
 deflation_basis_tolerance = 1e-3;
 linear_solver_printing = 0;
 
+% Optional BoomerAMG options (used when solver_type contains BOOMERAMG).
+boomeramg_opts = struct('threads', 16, 'print_level', 0, ...
+    'use_as_preconditioner', true);
+
 [linear_system_solver] = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type, ...
-    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q);
+    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, ...
+    linear_solver_printing, Q, coord, boomeramg_opts);
 
 
 %% Constitutive problem and matrix builder
 dim = 3;
 n_strain = dim * (dim + 1) / 2;
-constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi, Davis_type, shear, bulk, lame, WEIGHT, n_strain, n_int, dim);
+constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE( ...
+    B, c0, phi, psi, Davis_type, shear, bulk, lame, WEIGHT, n_strain, n_int, dim);
 
 %--------------------------------------------------------------------------
 %% Computation of the factor of safety for the SSR method
@@ -172,6 +183,7 @@ if direct_on  % Direct continuation method.
     time_run = toc;
     fprintf("Running_time = %f \n", time_run);
 end
+
 if indirect_on     % Indirect continuation method.
     fprintf('\n Indirect continuation method\n');
     tic;
@@ -181,6 +193,10 @@ if indirect_on     % Indirect continuation method.
         constitutive_matrix_builder, linear_system_solver.copy());
     time_run = toc;
     fprintf("Running_time = %f \n", time_run);
+end
+
+if contains(upper(string(solver_type)), "BOOMERAMG")
+    LINEAR_SOLVERS.hypre_boomeramg_clear();
 end
 
 %% Postprocessing - visualization of selected results for direct continuation
@@ -207,14 +223,14 @@ if direct_on
     pause(0.5)
     % visualisation of slices
     plane_vals = {[], [35, 40, 55], [21.6506, 43.3013]};
-    [figs, info] = VIZ.plot_deviatoric_norm_slices(B, U2, elem, coord, Xi, surf, plane_vals, 1, clim);
+    VIZ.plot_deviatoric_norm_slices(B, U2, elem, coord, Xi, surf, plane_vals, 1, clim);
 
-    % Visualization of the curve: omega -> lambda for indirect continuation.
+    % Visualization of the curve: omega -> lambda for direct continuation.
     figure; hold on; box on; grid on;
     plot(omega_hist2, lambda_hist2, '-o');
-    title('Indirect continuation method', 'Interpreter', 'latex')
-    xlabel('control variable - $\omega$', 'Interpreter', 'latex');
-    ylabel('strength reduction factor - $\lambda$', 'Interpreter', 'latex');
+    title('Direct continuation method', 'Interpreter', 'none')
+    xlabel('control variable - \omega');
+    ylabel('strength reduction factor - \lambda');
 end
 
 %% Postprocessing - visualization of selected results for indirect continuation
@@ -233,20 +249,17 @@ if indirect_on
     pause(0.5)
     % show deviatoric stress
     VIZ.plot_deviatoric_strain_3D(U3, coord, elem, surf, B);
-    % edit colorbar of deviatoric stress, and keep the edit for slices
     cl = caxis(gca);
     clim = [cl(1), 0.25*cl(2)];
     caxis(clim);
     drawnow
     pause(0.5)
-    % visualisation of slices
     plane_vals = {[], [35, 40, 55], [21.6506, 43.3013]};
-    [figs, info] = VIZ.plot_deviatoric_norm_slices(B, U3, elem, coord, Xi, surf, plane_vals, 1, clim);
+    VIZ.plot_deviatoric_norm_slices(B, U3, elem, coord, Xi, surf, plane_vals, 1, clim);
 
-    % Visualization of the curve: omega -> lambda for indirect continuation.
     figure; hold on; box on; grid on;
     plot(omega_hist3, lambda_hist3, '-o');
-    title('Indirect continuation method', 'Interpreter', 'latex')
-    xlabel('control variable - $\omega$', 'Interpreter', 'latex');
-    ylabel('strength reduction factor - $\lambda$', 'Interpreter', 'latex');
+    title('Indirect continuation method', 'Interpreter', 'none')
+    xlabel('control variable - \omega');
+    ylabel('strength reduction factor - \lambda');
 end

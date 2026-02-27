@@ -8,4 +8,10 @@ poznamky.docx
 *.png
 *.pos
 *.mat
-*.mat
+
+# Local C/HYPRE build artifacts
+bin/
+third_party/hypre/
+third_party/hypre-build-openmp/
+third_party/hypre-openmp/
+slope_stability/hypre_boomeramg_mex.mexa64

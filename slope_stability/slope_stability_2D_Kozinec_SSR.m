@@ -52,6 +52,9 @@ mat_props = ...
 [HatP,DHatP1,DHatP2] = ASSEMBLY.local_basis_volume_2D(elem_type, Xi);
 
 %% Creation/loading of the finite element mesh
+% Available Kozinec mesh family in meshes/Kozinec/ (nodes / elements):
+%   P1:  3656 / 7026
+%   P2: 14337 / 7026
 [coord, elem, Q, material_identifier] = MESH.load_mesh_Kozinec(elem_type, 'meshes/Kozinec/');
 % number of nodes, elements and integration points + print
 n_n=size(coord,2);
@@ -121,15 +124,19 @@ r_min = 1e-4;                   % Basic minimal regularization of the stiffness 
 
 %% Defining linear solver
 agmg_folder = "agmg"; % Check for AGMG in specified folder
-solver_type = 'DIRECT'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
+solver_type = 'DIRECT'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG", "DFGMRES_HYPRE_BOOMERAMG"
 
 linear_solver_tolerance = 1e-1;
 linear_solver_maxit = 100;
 deflation_basis_tolerance = 1e-3;
 linear_solver_printing = 0;
 
+% Optional BoomerAMG options (used when solver_type contains BOOMERAMG).
+boomeramg_opts = struct('threads', 16, 'print_level', 0, ...
+    'use_as_preconditioner', true);
+
 [linear_system_solver] = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type, ...
-    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q);
+    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q, coord, boomeramg_opts);
 
 
 %% Constitutive problem and matrix builder
@@ -162,6 +169,10 @@ if indirect_on     % Indirect continuation method.
         constitutive_matrix_builder, linear_system_solver.copy());
     time_run = toc;
     fprintf("Running_time = %f \n", time_run);
+end
+
+if contains(upper(string(solver_type)), "BOOMERAMG")
+    LINEAR_SOLVERS.hypre_boomeramg_clear();
 end
 
 %% Postprocessing - visualization of selected results for direct continuation

@@ -40,6 +40,10 @@ mat_props = [15, 20, 20, 40000, 0.3, 20, 20];
 [HatP, DHatP1, DHatP2, DHatP3] = ASSEMBLY.local_basis_volume_3D(elem_type, Xi);
 
 %% Creation/loading of the finite element mesh
+% Available SIOPT_L*.h5 meshes (nodes / elements):
+%   SIOPT_L0.h5: 23990 / 15356
+%   SIOPT_L1.h5: 84070 / 58803
+%   SIOPT_L5.h5: 305791 / 220510
 file_path = 'meshes/SIOPT_L0.h5';
 % file_path = 'meshes/SIOPT_L1.h5';
 % file_path = 'meshes/SIOPT_L5.h5';
@@ -120,15 +124,19 @@ r_min = 1e-6;                    % basic minimal regularization of the stiffness
 
 %% Defining linear solver
 agmg_folder = "agmg"; % Check for AGMG in specified folder
-solver_type = 'DFGMRES_AGMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG"
+solver_type = 'DFGMRES_AGMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG", "DFGMRES_HYPRE_BOOMERAMG"
 
 linear_solver_tolerance = 1e-1;
 linear_solver_maxit = 200;
 deflation_basis_tolerance = 1e-3;
 linear_solver_printing = 1;
 
+% Optional BoomerAMG options (used when solver_type contains BOOMERAMG).
+boomeramg_opts = struct('threads', 16, 'print_level', 0, ...
+    'use_as_preconditioner', true);
+
 [linear_system_solver] = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type, ...
-    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q);
+    linear_solver_tolerance, linear_solver_maxit, deflation_basis_tolerance, linear_solver_printing, Q, coord, boomeramg_opts);
 
 
 %% Constitutive problem and matrix builder
@@ -161,6 +169,10 @@ if indirect_on     % Indirect continuation method
         constitutive_matrix_builder, linear_system_solver.copy());
     time_run = toc;
     fprintf("Running_time = %f \n", time_run);
+end
+
+if contains(upper(string(solver_type)), "BOOMERAMG")
+    LINEAR_SOLVERS.hypre_boomeramg_clear();
 end
 
 %% Postprocessing - visualization of selected results for direct continuation
