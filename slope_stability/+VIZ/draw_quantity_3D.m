@@ -32,9 +32,9 @@ fig = figure;
 hold on;
 
 % Shift coordinates so that they are nonnegative.
-coord(1,:) = coord(1,:) - min(coord(1,:));
-coord(2,:) = coord(2,:) - min(coord(2,:));
-coord(3,:) = coord(3,:) - min(coord(3,:));
+% coord(1,:) = coord(1,:) - min(coord(1,:));
+% coord(2,:) = coord(2,:) - min(coord(2,:));
+% coord(3,:) = coord(3,:) - min(coord(3,:));
 
 % Visualization of the quantity.
 if size(surf, 1) > 3
