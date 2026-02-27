@@ -63,7 +63,7 @@ if if_plot
 
     for i = 1:num_edges_merged
         pts = coord(:, edges_merged(i,:));
-        plot3(pts(1,:), pts(2,:), pts(3,:), '-', 'Color', 'red', 'LineWidth', 2);
+        plot3(pts(1,:), pts(2,:), pts(3,:), '-', 'Color', 'black', 'LineWidth', 1);
     end
 end
 end

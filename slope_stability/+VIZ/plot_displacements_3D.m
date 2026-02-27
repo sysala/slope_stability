@@ -2,7 +2,7 @@ function fig = plot_displacements_3D(U, coord, elem,surf, scale_factor)
 %--------------------------------------------------------------------------
 % plot_displacements_3D plots the 3D displacement field on the mesh.
 %
-% This function computes the norm of the displacement field U, associates 
+% This function computes the norm of the displacement field U, associates
 % these values with elements, and then extracts the boundary faces and corresponding
 % stress/displacement values for visualization using the VIZ package.
 %
@@ -51,9 +51,9 @@ U_z_elem = U_tmp(elem);
 [~, ~, U_z_face] = VIZ.boundary_stress_from_elements_3D(coord, elem, U_z_elem);
 %%
 % Shift coordinates to non-negative values.
-coord(1,:) = coord(1,:) - min(coord(1,:));
-coord(2,:) = coord(2,:) - min(coord(2,:));
-coord(3,:) = coord(3,:) - min(coord(3,:));
+% coord(1,:) = coord(1,:) - min(coord(1,:));
+% coord(2,:) = coord(2,:) - min(coord(2,:));
+% coord(3,:) = coord(3,:) - min(coord(3,:));
 
 % Compute a scaling factor based on the maximum boundary value and mesh size.
 scale = scale_factor;
