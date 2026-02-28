@@ -17,3 +17,6 @@ third_party/hypre-openmp/
 slope_stability/hypre_boomeramg_mex.mexa64
 tmp/
 octave-workspace
+benchmark_octave/results/
+benchmark_octave/local/
+benchmark_octave/build/
