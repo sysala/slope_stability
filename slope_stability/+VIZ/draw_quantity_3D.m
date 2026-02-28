@@ -37,6 +37,7 @@ hold on;
 % coord(3,:) = coord(3,:) - min(coord(3,:));
 
 % Visualization of the quantity.
+verts = (coord + U)';
 if size(surf, 1) > 3
     % For higher order surface elements, subdivide into triangles.
     all_triangles = [1 4 6; 4 2 5; 4 5 6; 6 5 3];
@@ -44,39 +45,21 @@ if size(surf, 1) > 3
                 surf(all_triangles(2,:), :)'; 
                 surf(all_triangles(3,:), :)'; 
                 surf(all_triangles(4,:), :)'];
-    patch('Faces', surf_all, 'Vertices', (coord + U)', ...
+    patch('Faces', surf_all, 'Vertices', verts, ...
           'FaceVertexCData', Q_node', 'FaceColor', 'interp', 'EdgeColor', 'none');
 else
     % For simple triangular surface elements.
-    patch('Faces', surf(1:3, :)', 'Vertices', (coord + U)', ...
+    patch('Faces', surf(1:3, :)', 'Vertices', verts, ...
           'FaceVertexCData', Q_node', 'FaceColor', 'interp', 'EdgeColor', 'none');
 end
 
 colorbar;
-view([0.5 1 -2]);
-box on;
-axis equal;  % Maintain equal aspect ratios.
-hold off;
-
-% VIZ.compute_bounding_edges(surf, coord, 1);
-% Set camera parameters for an orthographic projection.
+box off;
+axis equal;
+axis tight;
 ax2 = gca;
-set(ax2,'Xdir','reverse');
-cameraParams = struct( ...
-    'Position', [1 4 -4] .* max(coord, [], 2)' * 2, ...
-    'Target', max(coord, [], 2)' / 2, ...
-    'UpVector', [0 180 0], ...
-    'ViewAngle', 0, ...
-    'Projection', 'orthographic');
-
-set(ax2, 'CameraPosition', cameraParams.Position);
-set(ax2, 'CameraTarget', cameraParams.Target);
-set(ax2, 'CameraUpVector', cameraParams.UpVector);
-set(ax2, 'CameraViewAngle', cameraParams.ViewAngle);
-set(ax2, 'Projection', cameraParams.Projection);
-
-
-
+VIZ.apply_standard_3d_camera(ax2, verts);
+hold off;
 
 drawnow;
 

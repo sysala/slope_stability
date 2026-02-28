@@ -174,8 +174,12 @@ if ~isempty(Cedges)
 end
 
 % (e) constrained Delaunay + keep only triangles whose centroids are inside (even-odd)
-dt = delaunayTriangulation(V, Cedges);
-T = dt.ConnectivityList;
+if exist('delaunayTriangulation','file') == 2 || exist('delaunayTriangulation','builtin') == 5
+    dt = delaunayTriangulation(V, Cedges);
+    T = dt.ConnectivityList;
+else
+    T = delaunay(V(:,1), V(:,2));
+end
 cent = (V(T(:,1),:) + V(T(:,2),:) + V(T(:,3),:))/3;
 inside = local_points_in_loops(cent, PloopsRS);
 T = T(inside,:);
@@ -196,10 +200,16 @@ if ~isempty(NodeValues)
     assert(numel(node_E)==Np, 'NodeValues length must match number of nodes (size(coord,2)).');
 else
     % Derive nodal values once from GP data in 3-D
-    F3 = scatteredInterpolant( ...
-        transformed_points(1,:).', transformed_points(2,:).', transformed_points(3,:).', ...
-        norm_E, 'natural', 'nearest');
-    node_E = F3(coord(1,:).', coord(2,:).', coord(3,:).');
+    if exist('scatteredInterpolant','file') == 2 || exist('scatteredInterpolant','builtin') == 5
+        F3 = scatteredInterpolant( ...
+            transformed_points(1,:).', transformed_points(2,:).', transformed_points(3,:).', ...
+            norm_E, 'natural', 'nearest');
+        node_E = F3(coord(1,:).', coord(2,:).', coord(3,:).');
+    else
+        node_E = local_griddatan_interp( ...
+            transformed_points(1,:).', transformed_points(2,:).', transformed_points(3,:).', ...
+            norm_E, coord(1,:).', coord(2,:).', coord(3,:).', 'natural');
+    end
 end
 
 % Build 3-D coordinates for each 2-D vertex on the slice plane
@@ -211,15 +221,27 @@ switch axDim
 end
 
 % Interpolate from nodal values to slice vertices (3-D scatteredInterpolant over nodes)
-Fnode = scatteredInterpolant(coord(1,:).', coord(2,:).', coord(3,:).', node_E, 'natural', 'nearest');
-Cvals = Fnode(V3(:,1), V3(:,2), V3(:,3));
+if exist('scatteredInterpolant','file') == 2 || exist('scatteredInterpolant','builtin') == 5
+    Fnode = scatteredInterpolant(coord(1,:).', coord(2,:).', coord(3,:).', node_E, 'natural', 'nearest');
+    Cvals = Fnode(V3(:,1), V3(:,2), V3(:,3));
+else
+    Cvals = local_griddatan_interp( ...
+        coord(1,:).', coord(2,:).', coord(3,:).', node_E, ...
+        V3(:,1), V3(:,2), V3(:,3), 'natural');
+end
 
 % ---------- 4) plot ----------
 ax = gca; hold(ax,'on');
 patch('Faces',T,'Vertices',V,'FaceVertexCData',Cvals, ...
       'FaceColor','interp','EdgeColor','none','Parent',ax);
 local_plot_loops(Ploops, lab, planeName);
-view(ax,2); axis(ax,'equal'); axis(ax,'tight'); colormap(ax,parula); colorbar(ax);
+view(ax,2); axis(ax,'equal'); axis(ax,'tight');
+if exist('parula','file') == 2 || exist('parula','builtin') == 5
+    colormap(ax, parula);
+else
+    colormap(ax, jet);
+end
+colorbar(ax);
 xlabel(ax, lab{1}); ylabel(ax, lab{2});
 title(ax, sprintf('Value on slice (%s) — nodal 3D interpolation', planeName));
 
@@ -354,6 +376,26 @@ function area = local_polyarea(L)
 x=L(:,1); y=L(:,2);
 area = 0.5 * sum(x.*y([2:end 1]) - y.*x([2:end 1]));
 area = abs(area);
+end
+
+function values_out = local_griddatan_interp(Xs, Ys, Zs, Vs, Xq, Yq, Zq, method_in)
+Psrc = [double(Xs), double(Ys), double(Zs)];
+Pq = [double(Xq), double(Yq), double(Zq)];
+values_src = double(Vs(:));
+
+method = lower(char(method_in));
+if strcmp(method, 'natural')
+    method = 'linear';
+end
+if ~(strcmp(method, 'linear') || strcmp(method, 'nearest'))
+    method = 'linear';
+end
+
+values_out = griddatan(Psrc, values_src, Pq, method);
+nan_mask = isnan(values_out);
+if any(nan_mask)
+    values_out(nan_mask) = griddatan(Psrc, values_src, Pq(nan_mask,:), 'nearest');
+end
 end
 
 function Ld = local_resample_loop(L, step)

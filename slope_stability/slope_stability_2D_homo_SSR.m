@@ -134,7 +134,7 @@ r_min = 1e-4;                   % Basic minimal regularization of the stiffness 
 
 %% Defining linear solver
 agmg_folder = "agmg"; % Check for AGMG in specified folder
-solver_type = 'DIRECT'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG", "DFGMRES_HYPRE_BOOMERAMG"
+solver_type = 'DFGMRES_HYPRE_BOOMERAMG'; % Type of solver: "DIRECT", "DFGMRES_ICHOL", "DFGMRES_AGMG", "DFGMRES_HYPRE_BOOMERAMG"
 
 linear_solver_tolerance = 1e-1;
 linear_solver_maxit = 100;
@@ -181,7 +181,7 @@ if indirect_on     % Indirect continuation method.
     fprintf("Running_time = %f \n", time_run);
 end
 
-if contains(upper(string(solver_type)), "BOOMERAMG")
+if ~isempty(strfind(upper(char(solver_type)), 'BOOMERAMG'))
     LINEAR_SOLVERS.hypre_boomeramg_clear();
 end
 

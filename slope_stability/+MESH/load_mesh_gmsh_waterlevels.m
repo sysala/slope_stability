@@ -29,11 +29,11 @@ function [coord, elem, surf, Q, material, triangle_labels] = load_mesh_gmsh_wate
 %     14 - water bed face (constant y representing height of the foundation) 
 
 % reading the mesh data from the file
-node = h5read(file_name, '/points');
-tetra_cells = h5read(file_name, '/tetra_cells') + 1;  % Adjust for 1-based indexing in MATLAB
-material = h5read(file_name, '/tetra_labels') - 1 ;   % Values 0, 1, 2, 3 
-triangle_cells = h5read(file_name, '/triangles') + 1;  % Adjust for 1-based indexing in MATLAB
-triangle_labels = h5read(file_name, '/triangle_labels');
+node = MESH.h5read_compat(file_name, '/points');
+tetra_cells = MESH.h5read_compat(file_name, '/tetra_cells') + 1;  % Adjust for 1-based indexing in MATLAB
+material = MESH.h5read_compat(file_name, '/tetra_labels') - 1 ;   % Values 0, 1, 2, 3 
+triangle_cells = MESH.h5read_compat(file_name, '/triangles') + 1;  % Adjust for 1-based indexing in MATLAB
+triangle_labels = MESH.h5read_compat(file_name, '/triangle_labels');
 
 % The array Q - initialization
 Q = true(size(node));

@@ -26,31 +26,31 @@ if ~isstruct(boomeramg_opts)
     error('boomeramg_opts must be a struct or empty.');
 end
 
-solver_type = upper(string(solver_type));
+solver_type = upper(local_to_char(solver_type));
 is_agmg_present = LINEAR_SOLVERS.check_agmg_present(agmg_folder);
 
-if solver_type == "DFGMRES_AGMG" && is_agmg_present == 0
+if strcmp(solver_type, 'DFGMRES_AGMG') && is_agmg_present == 0
     warning('AGMG not found. Switching to DFGMRES_ICHOL.');
-    solver_type = "DFGMRES_ICHOL";
+    solver_type = 'DFGMRES_ICHOL';
 end
 
 switch solver_type
-    case "DIRECT"
+    case 'DIRECT'
         linear_system_solver = LINEAR_SOLVERS.DIRECT_BACKSLASH();
 
-    case "DFGMRES_ICHOL"
+    case 'DFGMRES_ICHOL'
         preconditioner_builder = @(A) LINEAR_SOLVERS.diag_prec_ICHOL(A, Q);
         linear_system_solver = LINEAR_SOLVERS.DFGMRES(preconditioner_builder, ...
             linear_solver_tolerance, linear_solver_maxit, ...
             deflation_basis_tolerance, linear_solver_printing);
 
-    case "DFGMRES_AGMG"
+    case 'DFGMRES_AGMG'
         preconditioner_builder = @(A) LINEAR_SOLVERS.diag_prec_AGMG(A, Q);
         linear_system_solver = LINEAR_SOLVERS.DFGMRES(preconditioner_builder, ...
             linear_solver_tolerance, linear_solver_maxit, ...
             deflation_basis_tolerance, linear_solver_printing);
 
-    case {"DFGMRES_HYPRE_BOOMERAMG", "DFGMRES_BOOMERAMG", "BOOMERAMG", "HYPRE_BOOMERAMG"}
+    case {'DFGMRES_HYPRE_BOOMERAMG', 'DFGMRES_BOOMERAMG', 'BOOMERAMG', 'HYPRE_BOOMERAMG'}
         preconditioner_builder = local_build_boomer_builder(Q, coord, boomeramg_opts);
         linear_system_solver = LINEAR_SOLVERS.DFGMRES(preconditioner_builder, ...
             linear_solver_tolerance, linear_solver_maxit, ...
@@ -77,7 +77,7 @@ end
 opts = opts_in;
 instance_id = local_make_instance_id();
 if isfield(opts, 'instance_id')
-    instance_id = char(string(opts.instance_id));
+    instance_id = local_to_char(opts.instance_id);
     opts = rmfield(opts, 'instance_id');
 end
 
@@ -154,4 +154,17 @@ end
 function instance_id = local_make_instance_id()
 [~, token] = fileparts(tempname);
 instance_id = ['hypre_boomeramg_' token];
+end
+
+function value_char = local_to_char(value_in)
+if ischar(value_in)
+    value_char = value_in;
+elseif isnumeric(value_in) || islogical(value_in)
+    value_char = num2str(value_in);
+elseif iscell(value_in) && numel(value_in) == 1 && ischar(value_in{1})
+    value_char = value_in{1};
+else
+    value_char = char(value_in);
+end
+value_char = value_char(:).';
 end

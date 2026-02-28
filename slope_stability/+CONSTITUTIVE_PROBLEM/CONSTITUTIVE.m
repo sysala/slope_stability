@@ -1,4 +1,4 @@
-classdef CONSTITUTIVE < handle & matlab.mixin.Copyable
+classdef CONSTITUTIVE < handle
     %--------------------------------------------------------------------------
     % CONSTITUTIVE is a class for handling the constitutive model for
     % elastic-perfectly plastic materials based on the Mohr-Coulomb yield

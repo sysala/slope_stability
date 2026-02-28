@@ -187,7 +187,7 @@ d_lambda_init = 0.1;            % Initial increment of lambda
 d_lambda_min = 1e-5;            % Minimal increment of lambda
 d_lambda_diff_scaled_min = 0.005;% Minimal rate of increment of lambda
 omega_max_stop = 340700000;           % Maximum omega, then stop
-step_max = 100;                 % Maximum number of continuation steps
+step_max = 3;                 % Maximum number of continuation steps
 
 %% Input parameters for Newton's solvers
 it_newt_max = 50;               % Number of Newton's iterations
@@ -266,9 +266,27 @@ isBnd  = ismember(surfKs, bndFs, 'rows');
 
 surf = surf(:,isBnd);             % filtered: only outside surface triangles
 
-if contains(upper(string(solver_type)), "BOOMERAMG")
+if ~isempty(strfind(upper(char(solver_type)), 'BOOMERAMG'))
     LINEAR_SOLVERS.hypre_boomeramg_clear();
 end
+
+if ~exist('U2','var'), U2 = []; end
+if ~exist('U3','var'), U3 = []; end
+if ~exist('lambda_hist2','var'), lambda_hist2 = []; end
+if ~exist('omega_hist2','var'), omega_hist2 = []; end
+if ~exist('lambda_hist3','var'), lambda_hist3 = []; end
+if ~exist('omega_hist3','var'), omega_hist3 = []; end
+
+vis_snapshot_dir = 'tmp';
+vis_snapshot_file = fullfile(vis_snapshot_dir, 'slope_stability_3D_hetero_seepage_SSR_comsol_vis_inputs.mat');
+if ~isfolder(vis_snapshot_dir)
+    mkdir(vis_snapshot_dir);
+end
+save(vis_snapshot_file, 'direct_on', 'indirect_on', ...
+    'coord', 'elem', 'surf', 'pw', 'U2', 'U3', 'B', 'Xi', ...
+    'omega_hist2', 'lambda_hist2', 'omega_hist3', 'lambda_hist3', ...
+    'x1', 'x2', 'x3', 'y1', 'y2', 'z', '-v7');
+fprintf('\nSaved visualization snapshot: %s\n', vis_snapshot_file);
 
 %% Postprocessing - visualization of selected results for direct continuation
 if direct_on

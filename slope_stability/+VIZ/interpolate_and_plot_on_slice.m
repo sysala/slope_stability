@@ -52,6 +52,8 @@ cm          = get_opt(opts,'colormap','parula');
 
 idw_k       = get_opt(opts,'idw_k',16);
 idw_p       = get_opt(opts,'idw_power',2);
+has_scattered_interpolant = (exist('scatteredInterpolant', 'file') == 2 || ...
+    exist('scatteredInterpolant', 'builtin') == 5);
 
 % --- checks
 Nnodes = size(P3,2);
@@ -72,8 +74,10 @@ if use_single, Xn=single(Xn); Yn=single(Yn); Zn=single(Zn); end
 % --- interpolate ONCE (with 'nearest' extrapolation) or IDW
 switch lower(fast_method)
     case 'scattered'
-        if isfield(opts,'F') && isa(opts.F,'scatteredInterpolant')
+        if has_scattered_interpolant && isfield(opts,'F') && isa(opts.F,'scatteredInterpolant')
             F = opts.F;
+            vals_on_nodes = F(Xn, Yn, Zn);
+            F_out = F;
         else
             M = size(transformed_points,2);
             idx = 1:M;
@@ -85,10 +89,14 @@ switch lower(fast_method)
             Zs = transformed_points(3,idx).';
             Vs = norm_E(1,idx).';
             if use_single, Xs=single(Xs); Ys=single(Ys); Zs=single(Zs); Vs=single(Vs); end
-            F = scatteredInterpolant(Xs, Ys, Zs, Vs, method, 'nearest');
+            if has_scattered_interpolant
+                F = scatteredInterpolant(Xs, Ys, Zs, Vs, method, 'nearest');
+                vals_on_nodes = F(Xn, Yn, Zn);
+                F_out = F;
+            else
+                vals_on_nodes = local_griddatan_interpolate(Xs, Ys, Zs, Vs, Xn, Yn, Zn, method);
+            end
         end
-        vals_on_nodes = F(Xn, Yn, Zn);
-        F_out = F;
 
     case 'idw'
         M = size(transformed_points,2);
@@ -137,7 +145,7 @@ hBnd = plot(poly2(:,1), poly2(:,2), 'k-', 'LineWidth', 1);
 hold off;
 
 axis equal; axis tight; box on; grid on;
-colormap(cm);
+colormap(local_colormap_name(cm));
 cb = colorbar; set(cb,'TickLabelInterpreter','latex','FontSize',fs);
 if ~isempty(climv), caxis(climv); end
 
@@ -150,4 +158,37 @@ end
 
 function val = get_opt(s, name, def)
 if isfield(s,name) && ~isempty(s.(name)), val = s.(name); else, val = def; end
+end
+
+function values_out = local_griddatan_interpolate(Xs, Ys, Zs, Vs, Xq, Yq, Zq, method_in)
+Psrc = [double(Xs), double(Ys), double(Zs)];
+Pq = [double(Xq), double(Yq), double(Zq)];
+values_src = double(Vs);
+
+method = lower(char(method_in));
+if strcmp(method, 'natural')
+    method = 'linear';
+end
+
+function cm_out = local_colormap_name(cm_in)
+if ischar(cm_in) || (isstring(cm_in) && isscalar(cm_in))
+    cm_name = char(cm_in);
+    if strcmpi(cm_name, 'parula') && ~(exist('parula', 'file') == 2 || exist('parula', 'builtin') == 5)
+        cm_out = 'jet';
+    else
+        cm_out = cm_name;
+    end
+else
+    cm_out = cm_in;
+end
+end
+if ~(strcmp(method, 'linear') || strcmp(method, 'nearest'))
+    method = 'linear';
+end
+
+values_out = griddatan(Psrc, values_src, Pq, method);
+nan_mask = isnan(values_out);
+if any(nan_mask)
+    values_out(nan_mask) = griddatan(Psrc, values_src, Pq(nan_mask,:), 'nearest');
+end
 end

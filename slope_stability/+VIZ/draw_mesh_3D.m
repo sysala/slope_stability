@@ -13,44 +13,25 @@ function draw_mesh_3D(coord,surf)
 % ======================================================================
 %
 
-  figure
+  fig = figure; %#ok<NASGU>
   hold on
-  patch('Faces',surf(1:3,:)','Vertices',coord','FaceVertexCData',...
-        0*ones(size(coord,2),1),'FaceColor','white','EdgeColor','blue'); 
+  verts = coord';
+  patch('Faces', surf(1:3,:)', 'Vertices', verts, ...
+        'FaceColor', [0.93 0.93 0.93], 'FaceAlpha', 1.0, ...
+        'EdgeColor', [0.30 0.45 0.80], 'LineWidth', 0.35);
  
 %   ind=unique(surf(:));
 %   plot3( coord(1,ind),coord(2,ind),coord(3,ind), 'b.', 'MarkerSize',10);
-  axis equal;  % real ratios
-  view([0.5 1 -2]);
+  axis equal;
+  axis tight;
+  ax2 = gca;
+  VIZ.apply_standard_3d_camera(ax2, verts);
   hold off;
 %  axis off;
 VIZ.compute_bounding_edges(surf, coord, 1);
 
 
-view([0.5 1 -2]);
-box on;
-axis equal;  % Maintain equal aspect ratios.
+box off;
 hold off;
-
-% VIZ.compute_bounding_edges(surf, coord, 1);
-% Set camera parameters for an orthographic projection.
-ax2 = gca;
-set(ax2,'Xdir','reverse');
-cameraParams = struct( ...
-    'Position', [1 4 -4] .* max(coord, [], 2)' * 2, ...
-    'Target', max(coord, [], 2)' / 2, ...
-    'UpVector', [0 180 0], ...
-    'ViewAngle', 0, ...
-    'Projection', 'orthographic');
-
-set(ax2, 'CameraPosition', cameraParams.Position);
-set(ax2, 'CameraTarget', cameraParams.Target);
-set(ax2, 'CameraUpVector', cameraParams.UpVector);
-set(ax2, 'CameraViewAngle', cameraParams.ViewAngle);
-set(ax2, 'Projection', cameraParams.Projection);
-
-
-
-
 drawnow;
 end

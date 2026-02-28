@@ -22,11 +22,11 @@ if nargin < 2
 end
 
 % Load datasets from the HDF5 file.
-boundary = h5read(file_path, '/boundary');
-elem = h5read(file_path, '/elem') + 1;  % Adjust for MATLAB 1-indexing.
-face = h5read(file_path, '/face') + 1;  % Adjust for MATLAB 1-indexing.
-material = h5read(file_path, '/material');
-node = h5read(file_path, '/node');
+boundary = MESH.h5read_compat(file_path, '/boundary');
+elem = MESH.h5read_compat(file_path, '/elem') + 1;  % Adjust for MATLAB 1-indexing.
+face = MESH.h5read_compat(file_path, '/face') + 1;  % Adjust for MATLAB 1-indexing.
+material = MESH.h5read_compat(file_path, '/material');
+node = MESH.h5read_compat(file_path, '/node');
 
 % Initialize logical array Q (3 x n_nodes) with true values.
 Q = true(size(node));

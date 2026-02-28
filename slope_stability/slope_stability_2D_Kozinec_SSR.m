@@ -171,7 +171,7 @@ if indirect_on     % Indirect continuation method.
     fprintf("Running_time = %f \n", time_run);
 end
 
-if contains(upper(string(solver_type)), "BOOMERAMG")
+if ~isempty(strfind(upper(char(solver_type)), 'BOOMERAMG'))
     LINEAR_SOLVERS.hypre_boomeramg_clear();
 end
 

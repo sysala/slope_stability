@@ -42,9 +42,8 @@ xv = bbmin(1):hx:bbmax(1);
 yv = bbmin(2):hy:bbmax(2);
 [Xg, Yg] = meshgrid(xv, yv);
 
-% polyshape & inside mask (VECTOR inputs to support older MATLAB)
-ps = polyshape(Pbd(:,1), Pbd(:,2), 'Simplify', true);
-inside_vec = isinterior(ps, Xg(:), Yg(:));
+% Point-in-polygon mask (Octave/MATLAB compatible).
+inside_vec = local_points_inside_polygon(Xg(:), Yg(:), Pbd);
 Gin = [Xg(inside_vec), Yg(inside_vec)];
 
 % fallback: if no interior grid point landed inside, add centroid
@@ -52,26 +51,42 @@ if isempty(Gin)
     Gin = mean(Pbd,1);
 end
 
-% --- constrained Delaunay
+% --- triangulation
 AllPts = [BP; Gin];               % first |BP| are boundary points
-dt = delaunayTriangulation(AllPts, C);
+if exist('delaunayTriangulation', 'file') == 2 || exist('delaunayTriangulation', 'builtin') == 5
+    dt = delaunayTriangulation(AllPts, C);
+    T_all = dt.ConnectivityList;
+else
+    % Octave fallback: unconstrained triangulation; filter by polygon tests below.
+    T_all = delaunay(AllPts(:,1), AllPts(:,2));
+end
 
-% --- keep triangles inside polygon (incenters test)
-tri = triangulation(dt.ConnectivityList, dt.Points);
-ic = incenter(tri);
-keep = isinterior(ps, ic(:,1), ic(:,2));
-T = dt.ConnectivityList(keep,:);
-TR2 = triangulation(T, dt.Points);
+% --- keep triangles inside polygon
+cent = (AllPts(T_all(:,1),:) + AllPts(T_all(:,2),:) + AllPts(T_all(:,3),:)) / 3;
+keep_cent = local_points_inside_polygon(cent(:,1), cent(:,2), Pbd);
+
+mid12 = (AllPts(T_all(:,1),:) + AllPts(T_all(:,2),:)) / 2;
+mid23 = (AllPts(T_all(:,2),:) + AllPts(T_all(:,3),:)) / 2;
+mid31 = (AllPts(T_all(:,3),:) + AllPts(T_all(:,1),:)) / 2;
+keep_edges = local_points_inside_polygon(mid12(:,1), mid12(:,2), Pbd) & ...
+             local_points_inside_polygon(mid23(:,1), mid23(:,2), Pbd) & ...
+             local_points_inside_polygon(mid31(:,1), mid31(:,2), Pbd);
+
+T = T_all(keep_cent & keep_edges, :);
+TR2 = struct('ConnectivityList', T, 'Points', AllPts);
 
 % --- lift to 3D
-Npts = size(TR2.Points,1);
+Npts = size(AllPts,1);
 P3 = zeros(3, Npts);
-P3(free_axes,:) = TR2.Points.';   % fill free axes
+P3(free_axes,:) = AllPts.';       % fill free axes
 P3(fixed_ax,:)  = c_fixed;        % constant coord
 
 % --- optional plots
 if plot2d
-    figure; triplot(TR2); axis equal; title('2D constrained Delaunay');
+    figure;
+    triplot(TR2.ConnectivityList, TR2.Points(:,1), TR2.Points(:,2));
+    axis equal;
+    title('2D constrained Delaunay');
 end
 
 % ===== helpers =====
@@ -115,6 +130,11 @@ function [BP, C] = densify_boundary_no_dup(P, hseg)
             last_idx = new_idx;
         end
     end
+end
+
+function inside = local_points_inside_polygon(x, y, Pbd)
+[in, on] = inpolygon(x, y, Pbd(:,1), Pbd(:,2));
+inside = in | on;
 end
 
 end

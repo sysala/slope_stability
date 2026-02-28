@@ -16,3 +16,4 @@ third_party/hypre-build-openmp/
 third_party/hypre-openmp/
 slope_stability/hypre_boomeramg_mex.mexa64
 tmp/
+octave-workspace

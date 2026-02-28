@@ -1,5 +1,4 @@
 #include "mex.h"
-#include "matrix.h"
 
 #include "HYPRE.h"
 #include "HYPRE_IJ_mv.h"
