@@ -2,11 +2,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 RESULTS_DIR="${SCRIPT_DIR}/results"
 PROFILE="${1:-medium}"
 REPEATS="${2:-3}"
 WARMUP="${3:-1}"
-DEFAULT_LOCAL_OCTAVE="${SCRIPT_DIR}/local/install/octave-11.1.0-zen/bin/octave-cli"
+DEFAULT_LOCAL_OCTAVE="${ROOT_DIR}/.octave_all/install/octave-11.1.0-zen/bin/octave-cli"
 
 if [[ -n "${OCTAVE_BIN:-}" ]]; then
   OCT_BIN="${OCTAVE_BIN}"

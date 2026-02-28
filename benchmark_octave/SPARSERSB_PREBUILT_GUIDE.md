@@ -35,7 +35,13 @@ C = A_rsb * B_rsb;   % SpMM
 Runtime threading:
 
 ```bash
-OMP_NUM_THREADS=16 benchmark_octave/local/bin/octave-rsb --quiet
+OMP_NUM_THREADS=16 .octave_all/bin/octave-rsb --quiet
+```
+
+To activate the local optimized stack in your current shell:
+
+```bash
+source ./activate_optimized_octave.sh
 ```
 
 ## 2. Problem setup for repeated `B' * diag(d) * B`
@@ -154,7 +160,7 @@ If rows are very dense, precompute memory/work can blow up.
 Line-by-line assembly timing (`full` vs `sym_unique`):
 
 ```bash
-OMP_NUM_THREADS=16 benchmark_octave/local/bin/octave-rsb --quiet --eval \
+OMP_NUM_THREADS=16 .octave_all/bin/octave-rsb --quiet --eval \
 "addpath('benchmark_octave'); \
  run_btDb_prebuilt_line_breakdown('profile','medium','constructor','full','repeats',5,'warmup',2); \
  run_btDb_prebuilt_line_breakdown('profile','medium','constructor','sym_unique','repeats',5,'warmup',2);"
@@ -163,7 +169,7 @@ OMP_NUM_THREADS=16 benchmark_octave/local/bin/octave-rsb --quiet --eval \
 Full kernel benchmark with `sparsersb` backend:
 
 ```bash
-OMP_NUM_THREADS=16 benchmark_octave/local/bin/octave-rsb --quiet --eval \
+OMP_NUM_THREADS=16 .octave_all/bin/octave-rsb --quiet --eval \
 "addpath('benchmark_octave'); \
  run_benchmarks('profile','medium','sparse_backend','sparsersb','repeats',3,'warmup',1);"
 ```

@@ -2,12 +2,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-LOCAL_DIR="${ROOT_DIR}/local"
-SRC_DIR="${LOCAL_DIR}/src"
-BUILD_DIR="${LOCAL_DIR}/build"
-INSTALL_DIR="${LOCAL_DIR}/install"
-RESULTS_DIR="${ROOT_DIR}/results"
+ROOT_DIR="${SCRIPT_DIR}"
+BENCH_DIR="${ROOT_DIR}/benchmark_octave"
+OCTAVE_ALL_DIR="${ROOT_DIR}/.octave_all"
+SRC_DIR="${OCTAVE_ALL_DIR}/src"
+BUILD_DIR="${OCTAVE_ALL_DIR}/build"
+INSTALL_DIR="${OCTAVE_ALL_DIR}/install"
+RESULTS_DIR="${BENCH_DIR}/results"
 
 OPENBLAS_VERSION="${OPENBLAS_VERSION:-0.3.31}"
 OPENBLAS_TARGET="${OPENBLAS_TARGET:-ZEN}"
@@ -25,8 +26,10 @@ OPENBLAS_PREFIX="${INSTALL_DIR}/openblas-${OPENBLAS_VERSION}-zen"
 OCTAVE_PREFIX="${INSTALL_DIR}/octave-${OCTAVE_VERSION}-zen"
 LIBRSB_PREFIX="${INSTALL_DIR}/librsb-${LIBRSB_VERSION}"
 OCTAVE_BIN="${OCTAVE_PREFIX}/bin/octave-cli"
-LOCAL_WRAPPER="${LOCAL_DIR}/bin/octave-rsb"
-JUPYTER_VENV="${LOCAL_DIR}/venv-jupyter"
+LOCAL_WRAPPER="${OCTAVE_ALL_DIR}/bin/octave-rsb"
+RUNTIME_ENV="${OCTAVE_ALL_DIR}/env.sh"
+ACTIVATE_SCRIPT="${ROOT_DIR}/activate_optimized_octave.sh"
+JUPYTER_VENV="${ROOT_DIR}/.venv"
 
 if command -v getconf >/dev/null 2>&1; then
   NPROC_DEFAULT="$(getconf _NPROCESSORS_ONLN 2>/dev/null || true)"
@@ -53,7 +56,7 @@ require_cmd() {
 }
 
 ensure_dirs() {
-  mkdir -p "${SRC_DIR}" "${BUILD_DIR}" "${INSTALL_DIR}" "${RESULTS_DIR}" "${LOCAL_DIR}/bin"
+  mkdir -p "${SRC_DIR}" "${BUILD_DIR}" "${INSTALL_DIR}" "${RESULTS_DIR}" "${OCTAVE_ALL_DIR}/bin"
 }
 
 download_if_missing() {
@@ -99,4 +102,3 @@ export_runtime_env() {
   export PATH="${OCTAVE_PREFIX}/bin:${LIBRSB_PREFIX}/bin:${PATH}"
   export LD_LIBRARY_PATH="${LIBRSB_PREFIX}/lib:${OPENBLAS_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 }
-

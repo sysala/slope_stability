@@ -27,13 +27,13 @@ log "Functional check: Octave + sparsersb"
 "${OCTAVE_BIN}" --quiet --eval "pkg load sparsersb; A=sparsersb([1;2],[1;2],[2;3],2,2); disp(full(A));"
 
 log "Timing prebuilt assembly (full constructor path)"
-"${OCTAVE_BIN}" --quiet --eval "addpath('${ROOT_DIR}'); run_btDb_prebuilt_line_breakdown('profile','${PROFILE}','constructor','full','repeats',${REPEATS},'warmup',${WARMUP},'n_d',${ND},'out_file','${FULL_JSON}');"
+"${OCTAVE_BIN}" --quiet --eval "addpath('${BENCH_DIR}'); run_btDb_prebuilt_line_breakdown('profile','${PROFILE}','constructor','full','repeats',${REPEATS},'warmup',${WARMUP},'n_d',${ND},'out_file','${FULL_JSON}');"
 
 log "Timing prebuilt assembly (sym_unique constructor path)"
-"${OCTAVE_BIN}" --quiet --eval "addpath('${ROOT_DIR}'); run_btDb_prebuilt_line_breakdown('profile','${PROFILE}','constructor','sym_unique','repeats',${REPEATS},'warmup',${WARMUP},'n_d',${ND},'out_file','${SYM_JSON}');"
+"${OCTAVE_BIN}" --quiet --eval "addpath('${BENCH_DIR}'); run_btDb_prebuilt_line_breakdown('profile','${PROFILE}','constructor','sym_unique','repeats',${REPEATS},'warmup',${WARMUP},'n_d',${ND},'out_file','${SYM_JSON}');"
 
 log "Timing core benchmark suite with sparsersb backend"
-"${OCTAVE_BIN}" --quiet --eval "addpath('${ROOT_DIR}'); run_benchmarks('profile','${PROFILE}','repeats',3,'warmup',1,'sparse_backend','sparsersb','out_file','${STACK_JSON}');"
+"${OCTAVE_BIN}" --quiet --eval "addpath('${BENCH_DIR}'); run_benchmarks('profile','${PROFILE}','repeats',3,'warmup',1,'sparse_backend','sparsersb','out_file','${STACK_JSON}');"
 
 log "Checking performance envelope against known-good ranges"
 python3 - <<PY

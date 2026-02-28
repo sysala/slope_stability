@@ -20,3 +20,6 @@ octave-workspace
 benchmark_octave/results/
 benchmark_octave/local/
 benchmark_octave/build/
+.octave_all/
+.venv/
+benchmark_octave/benchmark_octave/

@@ -177,9 +177,9 @@ build_and_install_sparsersb() {
 }
 
 write_runtime_wrappers() {
-  mkdir -p "${LOCAL_DIR}/bin"
+  mkdir -p "${OCTAVE_ALL_DIR}/bin"
 
-  cat > "${LOCAL_DIR}/env.sh" <<EOF
+  cat > "${RUNTIME_ENV}" <<EOF
 #!/usr/bin/env bash
 export OPENBLAS_PREFIX="${OPENBLAS_PREFIX}"
 export OCTAVE_PREFIX="${OCTAVE_PREFIX}"
@@ -189,7 +189,7 @@ export PATH="${OCTAVE_PREFIX}/bin:${LIBRSB_PREFIX}/bin:\${PATH}"
 export LD_LIBRARY_PATH="${LIBRSB_PREFIX}/lib:${OPENBLAS_PREFIX}/lib:\${LD_LIBRARY_PATH:-}"
 export OMP_NUM_THREADS="\${OMP_NUM_THREADS:-16}"
 EOF
-  chmod +x "${LOCAL_DIR}/env.sh"
+  chmod +x "${RUNTIME_ENV}"
 
   cat > "${LOCAL_WRAPPER}" <<EOF
 #!/usr/bin/env bash
@@ -198,6 +198,20 @@ export LD_LIBRARY_PATH="${LIBRSB_PREFIX}/lib:${OPENBLAS_PREFIX}/lib:\${LD_LIBRAR
 exec "${OCTAVE_BIN}" "\$@"
 EOF
   chmod +x "${LOCAL_WRAPPER}"
+
+  cat > "${ACTIVATE_SCRIPT}" <<EOF
+#!/usr/bin/env bash
+if [[ "\${BASH_SOURCE[0]}" == "\${0}" ]]; then
+  echo "Run this script with: source ./activate_optimized_octave.sh" >&2
+  exit 1
+fi
+
+source "${RUNTIME_ENV}"
+echo "Activated optimized local Octave:"
+echo "  OCTAVE_BIN=\${OCTAVE_BIN}"
+echo "  OMP_NUM_THREADS=\${OMP_NUM_THREADS}"
+EOF
+  chmod +x "${ACTIVATE_SCRIPT}"
 }
 
 main() {

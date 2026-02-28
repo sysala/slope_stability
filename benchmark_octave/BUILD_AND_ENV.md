@@ -4,11 +4,13 @@ This document gives a full reproducible build and verification workflow for this
 
 Target layout (all local to repo):
 
-- sources: `benchmark_octave/local/src`
-- build trees: `benchmark_octave/local/build`
-- installs: `benchmark_octave/local/install`
-- octave wrapper: `benchmark_octave/local/bin/octave-rsb`
-- jupyter venv: `benchmark_octave/local/venv-jupyter`
+- sources: `.octave_all/src`
+- build trees: `.octave_all/build`
+- installs: `.octave_all/install`
+- octave wrapper: `.octave_all/bin/octave-rsb`
+- runtime env exports: `.octave_all/env.sh`
+- activation helper: `activate_optimized_octave.sh`
+- jupyter venv: `.venv`
 
 ## 1. Prerequisites
 
@@ -32,7 +34,7 @@ If some optional Octave features are missing, configure will print which librari
 
 ## 2. Scripts Provided
 
-All scripts are in `benchmark_octave/scripts`.
+Build/setup scripts are in repository root.
 
 - `clean_local_builds.sh`
   - Removes local build/install/venv artifacts.
@@ -46,15 +48,16 @@ All scripts are in `benchmark_octave/scripts`.
     - librsb `1.3.0.2` (with GCC15 compatibility patch)
     - sparsersb `1.0.9` (Octave 11 compatibility patch + `-std=gnu++17`)
   - Writes:
-    - `benchmark_octave/local/env.sh`
-    - `benchmark_octave/local/bin/octave-rsb`
+    - `.octave_all/env.sh`
+    - `.octave_all/bin/octave-rsb`
+    - `activate_optimized_octave.sh`
 - `setup_jupyter_octave_venv.sh`
   - Creates local venv and installs:
     - `jupyterlab`, `notebook`, `ipykernel`, `octave_kernel`
   - Creates kernel spec:
     - name: `octave-local-rsb`
     - display: `Octave (local-rsb)`
-    - uses `benchmark_octave/local/bin/octave-rsb`
+    - uses `.octave_all/bin/octave-rsb`
 - `verify_stack.sh`
   - Functional checks (`pkg load sparsersb`)
   - Performance checks at `OMP_NUM_THREADS=16`:
@@ -71,7 +74,7 @@ All scripts are in `benchmark_octave/scripts`.
 From repo root:
 
 ```bash
-./benchmark_octave/scripts/bootstrap_all.sh
+./bootstrap_all.sh
 ```
 
 This is the recommended path for a fresh rebuild.
@@ -80,16 +83,16 @@ This is the recommended path for a fresh rebuild.
 
 ```bash
 # 1) Clean old local artifacts
-./benchmark_octave/scripts/clean_local_builds.sh
+./clean_local_builds.sh
 
 # 2) Build OpenBLAS + Octave + librsb + sparsersb
-./benchmark_octave/scripts/build_octave_stack.sh
+./build_octave_stack.sh
 
 # 3) Setup local Jupyter venv and Octave kernel
-./benchmark_octave/scripts/setup_jupyter_octave_venv.sh
+./setup_jupyter_octave_venv.sh
 
 # 4) Verify functionality + performance envelope
-THREADS=16 ./benchmark_octave/scripts/verify_stack.sh
+THREADS=16 ./verify_stack.sh
 ```
 
 ## 5. Runtime Environment
@@ -97,7 +100,13 @@ THREADS=16 ./benchmark_octave/scripts/verify_stack.sh
 To use the built stack in shell sessions:
 
 ```bash
-source benchmark_octave/local/env.sh
+source .octave_all/env.sh
+```
+
+or via the root activation helper:
+
+```bash
+source ./activate_optimized_octave.sh
 ```
 
 Then:
@@ -109,13 +118,13 @@ Then:
 or directly:
 
 ```bash
-benchmark_octave/local/bin/octave-rsb --quiet
+.octave_all/bin/octave-rsb --quiet
 ```
 
 ## 6. Jupyter Usage
 
 ```bash
-source benchmark_octave/local/venv-jupyter/bin/activate
+source .venv/bin/activate
 jupyter lab
 ```
 
@@ -123,7 +132,7 @@ Choose kernel: `Octave (local-rsb)`.
 
 The kernel is configured to use:
 
-- local wrapper: `benchmark_octave/local/bin/octave-rsb`
+- local wrapper: `.octave_all/bin/octave-rsb`
 - `OMP_NUM_THREADS=16`
 - local `LD_LIBRARY_PATH` with librsb and OpenBLAS
 
@@ -154,7 +163,7 @@ These patches are reapplied automatically on each clean rebuild.
 Validated by running:
 
 ```bash
-./benchmark_octave/scripts/bootstrap_all.sh --no-clean
+./bootstrap_all.sh --no-clean
 ```
 
 Key results (`THREADS=16`):

@@ -8,6 +8,7 @@ Benchmarks for expensive linear-algebra kernels that mirror the slope stability 
 
 For a full reproducible local build + Jupyter setup workflow, see `benchmark_octave/BUILD_AND_ENV.md`.
 For `sparsersb` usage and prebuilt `B' * diag(d) * B` assembly, see `benchmark_octave/SPARSERSB_PREBUILT_GUIDE.md`.
+Build/setup scripts are in repository root (`build_octave_stack.sh`, `setup_jupyter_octave_venv.sh`, `verify_stack.sh`, `bootstrap_all.sh`).
 
 ## Files
 
@@ -39,7 +40,7 @@ Results are written to:
 If system Octave is not installed, the runner can use a local build:
 
 - default local path searched by script:
-  - `benchmark_octave/local/install/octave-11.1.0-zen/bin/octave-cli`
+  - `.octave_all/install/octave-11.1.0-zen/bin/octave-cli`
 - optional overrides:
   - `OCTAVE_BIN=/absolute/path/to/octave-cli`
   - `MATLAB_BIN=/absolute/path/to/matlab`
@@ -51,9 +52,15 @@ Example:
 OCTAVE_OMP_NUM_THREADS=16 ./benchmark_octave/run_octave_vs_matlab.sh medium 3 1
 ```
 
+Activate the local optimized build in your current shell:
+
+```bash
+source ./activate_optimized_octave.sh
+```
+
 ## Build Notes (2026-02-28)
 
-Performed local source builds under `benchmark_octave/local/`:
+Performed local source builds under `.octave_all/`:
 
 1. `OpenBLAS 0.3.31` (`TARGET=ZEN`, `DYNAMIC_ARCH=0`, `USE_OPENMP=1`, `NO_AFFINITY=1`)
 2. `Octave 11.1.0` built against local OpenBLAS with:
@@ -107,16 +114,16 @@ Built and tested `librsb` and Octave package `sparsersb` with local Octave `11.1
 
 ### Built artifacts
 
-- `librsb` source: `benchmark_octave/local/src/librsb-1.3.0.2.tar.gz`
-- `librsb` install prefix: `benchmark_octave/local/install/librsb-1.3.0.2`
-- `sparsersb` source (upstream): `benchmark_octave/local/src/sparsersb-1.0.9.tar.gz`
-- `sparsersb` source (patched for Octave 11 / GCC 15): `benchmark_octave/local/src/sparsersb-1.0.9-oct11.tar.gz`
+- `librsb` source: `.octave_all/src/librsb-1.3.0.2.tar.gz`
+- `librsb` install prefix: `.octave_all/install/librsb-1.3.0.2`
+- `sparsersb` source (upstream): `.octave_all/src/sparsersb-1.0.9.tar.gz`
+- `sparsersb` source (patched for Octave 11 / GCC 15): `.octave_all/src/sparsersb-1.0.9-oct11.tar.gz`
 
 ### Compatibility patches applied
 
 1. `librsb-1.3.0.2` + GCC 15:
    - `omp.h` C++ templates conflicted with `extern "C"` in `rsb_common.h`.
-   - Patched local source at `benchmark_octave/local/src/librsb-1.3.0.2/rsb_common.h` to include `omp.h` outside C linkage in C++ builds.
+   - Patched local source at `.octave_all/src/librsb-1.3.0.2/rsb_common.h` to include `omp.h` outside C linkage in C++ builds.
 2. `sparsersb-1.0.9` + Octave 11:
    - package hardcoded `-std=gnu++11` (too old for Octave 11 headers).
    - patched `src/configure` to respect externally provided `SPARSERSB_CXX11`, then used `-std=gnu++17`.
@@ -125,10 +132,10 @@ Built and tested `librsb` and Octave package `sparsersb` with local Octave `11.1
 ### Install/test command shape
 
 ```bash
-export PATH=benchmark_octave/local/install/librsb-1.3.0.2/bin:$PATH
-export LD_LIBRARY_PATH=benchmark_octave/local/install/librsb-1.3.0.2/lib:$LD_LIBRARY_PATH
+export PATH=.octave_all/install/librsb-1.3.0.2/bin:$PATH
+export LD_LIBRARY_PATH=.octave_all/install/librsb-1.3.0.2/lib:$LD_LIBRARY_PATH
 export SPARSERSB_CXX11=-std=gnu++17
-benchmark_octave/local/install/octave-11.1.0-zen/bin/octave-cli --eval "pkg install -verbose benchmark_octave/local/src/sparsersb-1.0.9-oct11.tar.gz"
+.octave_all/install/octave-11.1.0-zen/bin/octave-cli --eval "pkg install -verbose .octave_all/src/sparsersb-1.0.9-oct11.tar.gz"
 ```
 
 Note: `pkg load sparsersb` needs `librsb.so.0` at runtime. Keep `LD_LIBRARY_PATH` set (or install `librsb` in a system library path).
@@ -208,7 +215,7 @@ Benchmark script: `benchmark_octave/run_sparsersb_inputpath_benchmark.m`
 Run used:
 
 ```bash
-OMP_NUM_THREADS=16 benchmark_octave/local/install/octave-11.1.0-zen/bin/octave-cli --quiet --eval "addpath('benchmark_octave'); run_sparsersb_inputpath_benchmark('profile','medium','repeats',3,'warmup',1,'matvec_repeats',30,'out_file','benchmark_octave/results/octave_sparsersb_inputpath_medium.json');"
+OMP_NUM_THREADS=16 .octave_all/install/octave-11.1.0-zen/bin/octave-cli --quiet --eval "addpath('benchmark_octave'); run_sparsersb_inputpath_benchmark('profile','medium','repeats',3,'warmup',1,'matvec_repeats',30,'out_file','benchmark_octave/results/octave_sparsersb_inputpath_medium.json');"
 ```
 
 Matrix (`medium` profile): `400000 x 400000`, `nnz = 4398920`
