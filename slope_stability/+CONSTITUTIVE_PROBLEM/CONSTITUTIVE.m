@@ -495,9 +495,25 @@ classdef CONSTITUTIVE < handle
             K_elast_QQ = obj.B_Q' * D_e * obj.B_Q;
             K_elast_QQ = (K_elast_QQ + K_elast_QQ') / 2;  % ensure symmetric pattern & values
 
-            % Extract the maximal (I, J, V_elast) pattern — one-time find().
-            [obj.ref_I, obj.ref_J, obj.V_elast_QQ] = find(K_elast_QQ);
+            % Compute the MAXIMAL symbolic sparsity pattern of B_Q' * D * B_Q
+            % for ANY block-diagonal D with the same (iD,jD) structure.
+            % This avoids losing entries where K_elast happens to be numerically
+            % zero but K_tangent is not (root cause of iteration count mismatch
+            % with main branch).
+            % Use pattern-only sparse matrices for speed (spones avoids float math).
+            B_Q_pat = spones(obj.B_Q);
+            D_pattern = sparse(obj.iD(:), obj.jD(:), ones(numel(obj.iD(:)), 1), ...
+                obj.n_strain * obj.n_int, obj.n_strain * obj.n_int);
+            D_pat = spones(D_pattern);
+            K_sym_pattern = B_Q_pat' * D_pat * B_Q_pat;
+            K_sym_pattern = K_sym_pattern + K_sym_pattern';  % symmetrize pattern
+
+            % Extract the maximal (I, J) pattern from the symbolic matrix.
+            [obj.ref_I, obj.ref_J, ~] = find(K_sym_pattern);
             obj.ref_idx = sub2ind([obj.n_Q, obj.n_Q], obj.ref_I, obj.ref_J);
+
+            % Store elastic values at the maximal pattern positions.
+            obj.V_elast_QQ = full(K_elast_QQ(obj.ref_idx));
 
             % Compute transpose permutation: maps entry (i,j) to entry (j,i).
             % Used to symmetrize K_r values (matching main branch behaviour).
