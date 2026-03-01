@@ -3,22 +3,22 @@ function [U, lambda_hist, omega_hist, Umax_hist, stats] = SSR_indirect_continuat
     omega_max_stop, it_newt_max, it_damp_max, tol, r_min, ...
     K_elast, Q, f, constitutive_matrix_builder, linear_system_solver)
 %--------------------------------------------------------------------------
-% SSR_indirect_continuation performs an indirect continuation method to 
-% estimate the safety factor lambda* and to construct the curve between the 
-% strength reduction parameter lambda and the parameter omega representing 
+% SSR_indirect_continuation performs an indirect continuation method to
+% estimate the safety factor lambda* and to construct the curve between the
+% strength reduction parameter lambda and the parameter omega representing
 % the work of external forces.
 %
-% This method incrementally increases omega and, at each step, solves the 
+% This method incrementally increases omega and, at each step, solves the
 % nonlinear system:
 %
 %       F_lambda(U) = f   and   f' * U = omega,
 %
 % where F_lambda(U) is the internal force vector for a given lambda. This
-% system is primarily solved by the Newton method. Alternative methods 
-% (e.g., bisection or tangent methods w.r.t. lambda) are provided as 
+% system is primarily solved by the Newton method. Alternative methods
+% (e.g., bisection or tangent methods w.r.t. lambda) are provided as
 % commented-out code.
 %
-% The algorithm updates lambda and omega adaptively, storing the history of 
+% The algorithm updates lambda and omega adaptively, storing the history of
 % computed values for further analysis.
 %
 % INPUTS:
@@ -82,6 +82,19 @@ stats.step_linear_orthogonalization_time = [];
 stats.step_lambda = [];
 stats.step_omega = [];
 stats.total_wall_time = 0;
+
+% Accumulated Newton profiling timings
+stats.newton_timing.build_F_and_DS      = 0;
+stats.newton_timing.solve_V             = 0;
+stats.newton_timing.A_orthogonalize     = 0;
+stats.newton_timing.damping             = 0;
+stats.newton_timing.setup_preconditioner = 0;
+stats.newton_timing.build_F_eps         = 0;
+stats.newton_timing.solve_W             = 0;
+stats.newton_timing.K_r_assembly        = 0;
+stats.newton_timing.sparsersb_build     = 0;
+stats.newton_timing.expand_deflation_W  = 0;
+stats.newton_timing.expand_deflation_V  = 0;
 
 lambda_hist = zeros(1, 1000);    % History of lambda values.
 omega_hist = zeros(1, 1000);     % History of omega values.
@@ -172,6 +185,14 @@ while true
     stats.attempt_linear_orthogonalization_time(end + 1, 1) = delta_attempt.orthogonalization_time;
     stats.attempt_omega_target(end + 1, 1) = omega_it;
     stats.attempt_lambda_before(end + 1, 1) = lambda;
+
+    % Accumulate Newton profiling timings
+    if isfield(history, 'timing')
+        fnames = fieldnames(history.timing);
+        for fi = 1:numel(fnames)
+            stats.newton_timing.(fnames{fi}) = stats.newton_timing.(fnames{fi}) + history.timing.(fnames{fi});
+        end
+    end
     if flag == 0
         stats.attempt_lambda_after(end + 1, 1) = lambda_it;
     else

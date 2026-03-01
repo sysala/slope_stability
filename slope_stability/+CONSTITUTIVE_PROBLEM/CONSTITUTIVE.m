@@ -2,11 +2,11 @@ classdef CONSTITUTIVE < handle
     %--------------------------------------------------------------------------
     % CONSTITUTIVE is a class for handling the constitutive model for
     % elastic-perfectly plastic materials based on the Mohr-Coulomb yield
-    % criterion. It computes stress, consistent tangent operators, and 
+    % criterion. It computes stress, consistent tangent operators, and
     % residual forces from strain fields at integration points.
     %
-    % The class stores material parameters, quadrature weights, and the 
-    % strain-displacement matrix. It also measures runtimes for various 
+    % The class stores material parameters, quadrature weights, and the
+    % strain-displacement matrix. It also measures runtimes for various
     % operations such as reduction, stress evaluation, and tangent assembly.
     %
     % Properties:
@@ -45,7 +45,7 @@ classdef CONSTITUTIVE < handle
     %   get_total_time and similar - Retrieve accumulated runtimes.
     %   get_*_time_vector - Return runtime vectors.
     %--------------------------------------------------------------------------
-    
+
     properties
         c0
         phi
@@ -75,8 +75,18 @@ classdef CONSTITUTIVE < handle
         time_build_F
         time_build_F_K_tangent
         time_potential
+
+        % Sparse K_r(Q,Q) assembly infrastructure
+        B_Q                 % B restricted to free DOFs
+        DS_elast            % Elastic constitutive entries (n_strain^2 x n_int)
+        n_Q                 % Number of free DOFs
+        pattern_initialized % Logical flag
+        ref_I               % Row indices of maximal sparsity pattern (from find)
+        ref_J               % Column indices of maximal sparsity pattern (from find)
+        ref_idx             % Linear indices into n_Q x n_Q matrix for value extraction
+        V_elast_QQ          % Elastic K_elast(Q,Q) values at ref_I/ref_J positions
     end
-    
+
     methods
         function obj = CONSTITUTIVE(B, c0, phi, psi, Davis_type, shear, bulk, lame, WEIGHT, n_strain, n_int, dim)
             %--------------------------------------------------------------------------
@@ -125,8 +135,18 @@ classdef CONSTITUTIVE < handle
             obj.time_build_F = [];
             obj.time_build_F_K_tangent = [];
             obj.time_potential = [];
+
+            % Sparse pattern not yet initialized.
+            obj.B_Q = [];
+            obj.DS_elast = [];
+            obj.n_Q = 0;
+            obj.pattern_initialized = false;
+            obj.ref_I = [];
+            obj.ref_J = [];
+            obj.ref_idx = [];
+            obj.V_elast_QQ = [];
         end
-        
+
         function obj = reduction(obj, lambda)
             %--------------------------------------------------------------------------
             % reduction Reduces material strength parameters.
@@ -150,7 +170,7 @@ classdef CONSTITUTIVE < handle
             elapsed_time = toc(t_start);
             obj.time_reduction(end + 1) = elapsed_time;
         end
-        
+
         function obj = constitutive_problem_stress(obj, U)
             %--------------------------------------------------------------------------
             % constitutive_problem_stress Computes the stress tensor from displacement U.
@@ -208,7 +228,7 @@ classdef CONSTITUTIVE < handle
             elapsed_time = toc(t_start);
             obj.time_stress_tangent(end + 1) = elapsed_time;
         end
-        
+
         function F = build_F(obj)
             %--------------------------------------------------------------------------
             % build_F Assembles the residual force vector.
@@ -216,7 +236,7 @@ classdef CONSTITUTIVE < handle
             %   F = obj.build_F()
             %
             % This method builds the force vector F from the stress tensor S and the
-            % strain-displacement matrix B. The result is reshaped to match the 
+            % strain-displacement matrix B. The result is reshaped to match the
             % spatial dimension.
             %
             % The runtime is recorded.
@@ -331,15 +351,15 @@ classdef CONSTITUTIVE < handle
             elapsed_time = toc(t_start);
             obj.time_potential(end + 1) = elapsed_time;
         end
-        
+
         % Methods to get total runtime measurements.
         function total_time = get_total_time(obj)
             %--------------------------------------------------------------------------
             % get_total_time Returns the sum of all recorded runtimes.
             %--------------------------------------------------------------------------
             total_time = sum(obj.time_reduction) + sum(obj.time_stress) + ...
-                         sum(obj.time_stress_tangent) + sum(obj.time_build_F) + ...
-                         sum(obj.time_build_F_K_tangent) + sum(obj.time_potential);
+                sum(obj.time_stress_tangent) + sum(obj.time_build_F) + ...
+                sum(obj.time_build_F_K_tangent) + sum(obj.time_potential);
         end
 
         function total_time = get_total_reduction_time(obj)
@@ -389,6 +409,111 @@ classdef CONSTITUTIVE < handle
 
         function time_vector = get_potential_time_vector(obj)
             time_vector = obj.time_potential;
+        end
+
+        % ============================================================
+        %  Sparse K_r(Q,Q) assembly via B_Q' * D_r * B_Q
+        % ============================================================
+
+        function obj = init_K_r_pattern(obj, Q)
+            %--------------------------------------------------------------------------
+            % init_K_r_pattern  One-time setup: restrict B to free DOFs,
+            % precompute elastic DS, build the maximal sparsity pattern from
+            % K_elast(Q,Q), and store reference I/J/idx/V_elast.
+            %
+            %   obj.init_K_r_pattern(Q)
+            %
+            % Q is the logical free-DOF mask (dim x n_n).  After this call
+            % the object can build K_r(Q,Q) triplets via build_K_r_QQ_vals.
+            %--------------------------------------------------------------------------
+            fprintf('Initialising K_r(Q,Q) sparse pattern ... ');
+            t0 = tic;
+
+            Q_flat = find(Q(:));
+            obj.B_Q = obj.B(:, Q_flat);       % restrict to free DOFs
+            obj.n_Q = numel(Q_flat);
+
+            % Elastic constitutive entries  DS_elast  (n_strain^2 x n_int)
+            IOTA = [1;1;1; zeros(obj.n_strain - 3, 1)];
+            VOL  = IOTA * IOTA';
+            if obj.n_strain == 6       % 3D
+                DEV = diag([1,1,1, 0.5, 0.5, 0.5]) - VOL / 3;
+            elseif obj.n_strain == 3   % 2D
+                DEV = diag([1,1, 0.5]) - VOL / 3;
+            else
+                error('Unsupported n_strain = %d', obj.n_strain);
+            end
+            obj.DS_elast = 2 * DEV(:) * obj.shear + VOL(:) * obj.bulk;
+
+            % Build elastic K(Q,Q) to get the maximal sparsity pattern.
+            vD_e = obj.vD_pre(:) .* obj.DS_elast(:);
+            D_e  = sparse(obj.iD(:), obj.jD(:), vD_e, ...
+                obj.n_strain * obj.n_int, obj.n_strain * obj.n_int);
+            K_elast_QQ = obj.B_Q' * D_e * obj.B_Q;
+            % K_elast_QQ = (K_elast_QQ + K_elast_QQ') / 2;  % symmetrisation commented out
+
+            % Extract the maximal (I, J, V_elast) pattern — one-time find().
+            [obj.ref_I, obj.ref_J, obj.V_elast_QQ] = find(K_elast_QQ);
+            obj.ref_idx = sub2ind([obj.n_Q, obj.n_Q], obj.ref_I, obj.ref_J);
+
+            obj.pattern_initialized = true;
+            fprintf('done  (%.1f s, n_Q = %d, nnz = %d)\n', ...
+                toc(t0), obj.n_Q, numel(obj.ref_I));
+        end
+
+        function F = build_F_and_DS_all(obj, lambda, U)
+            %--------------------------------------------------------------------------
+            % build_F_and_DS_all  Reduction + stress/tangent + build F.
+            % Same as build_F_K_tangent_all but skips the sparse K assembly.
+            % After this call obj.DS holds the current tangent moduli.
+            %--------------------------------------------------------------------------
+            obj.reduction(lambda);
+            obj.constitutive_problem_stress_tangent(U);
+            F = obj.build_F();
+        end
+
+        function F = build_F_and_DS_reduced(obj, U)
+            %--------------------------------------------------------------------------
+            % build_F_and_DS_reduced  Stress/tangent + build F  (no reduction).
+            % Same as build_F_K_tangent_reduced but skips the sparse K assembly.
+            % After this call obj.DS holds the current tangent moduli.
+            %--------------------------------------------------------------------------
+            obj.constitutive_problem_stress_tangent(U);
+            F = obj.build_F();
+        end
+
+        function V_tang = build_K_tangent_QQ_vals(obj)
+            %--------------------------------------------------------------------------
+            % build_K_tangent_QQ_vals  Build K_tangent(Q,Q) = B_Q' * D_tang * B_Q
+            % and extract values at the reference sparsity pattern positions.
+            %
+            %   V_tang = obj.build_K_tangent_QQ_vals()
+            %
+            % Returns a column vector of the same length as ref_I/ref_J.
+            % obj.DS must already hold the current tangent moduli.
+            %--------------------------------------------------------------------------
+            vD_t = obj.vD_pre(:) .* obj.DS(:);
+            D_t  = sparse(obj.iD(:), obj.jD(:), vD_t, ...
+                obj.n_strain * obj.n_int, obj.n_strain * obj.n_int);
+            K_t  = obj.B_Q' * D_t * obj.B_Q;
+            % K_t = (K_t + K_t') / 2;  % symmetrisation commented out
+            V_tang = full(K_t(obj.ref_idx));
+        end
+
+        function [I, J, V_kr] = build_K_r_QQ_vals(obj, r)
+            %--------------------------------------------------------------------------
+            % build_K_r_QQ_vals  Compute K_r(Q,Q) triplets.
+            %
+            %   [I, J, V_kr] = obj.build_K_r_QQ_vals(r)
+            %
+            % Returns the row/col indices (same every call) and the values
+            % V_kr = r * V_elast + (1-r) * V_tangent.
+            % obj.DS must already hold the current tangent moduli.
+            %--------------------------------------------------------------------------
+            V_tang = obj.build_K_tangent_QQ_vals();
+            V_kr   = r * obj.V_elast_QQ + (1 - r) * V_tang;
+            I = obj.ref_I;
+            J = obj.ref_J;
         end
     end
 end

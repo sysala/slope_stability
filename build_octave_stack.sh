@@ -19,10 +19,15 @@ prepare_sources() {
     "https://ftp.gnu.org/gnu/octave/octave-${OCTAVE_VERSION}.tar.xz"
 
   download_if_missing "${LIBRSB_TARBALL}" \
+    "https://downloads.sourceforge.net/project/librsb/librsb-${LIBRSB_VERSION}.tar.gz" \
+    "https://sourceforge.net/projects/librsb/files/librsb-${LIBRSB_VERSION}.tar.gz/download" \
     "https://downloads.sourceforge.net/project/librsb/librsb/librsb-${LIBRSB_VERSION}.tar.gz" \
     "https://sourceforge.net/projects/librsb/files/librsb/librsb-${LIBRSB_VERSION}.tar.gz/download"
 
   download_if_missing "${SPARSERSB_TARBALL}" \
+    "https://packages.octave.org/download/sparsersb-${SPARSERSB_VERSION}.tar.gz" \
+    "https://downloads.sourceforge.net/project/octave/Octave%20Forge%20Packages/Individual%20Package%20Releases/sparsersb-${SPARSERSB_VERSION}.tar.gz" \
+    "https://sourceforge.net/projects/octave/files/Octave%20Forge%20Packages/Individual%20Package%20Releases/sparsersb-${SPARSERSB_VERSION}.tar.gz/download" \
     "https://downloads.sourceforge.net/project/librsb/sparsersb/sparsersb-${SPARSERSB_VERSION}.tar.gz" \
     "https://sourceforge.net/projects/librsb/files/sparsersb/sparsersb-${SPARSERSB_VERSION}.tar.gz/download"
 }

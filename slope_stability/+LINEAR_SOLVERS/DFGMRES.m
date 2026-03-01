@@ -27,7 +27,7 @@ classdef DFGMRES < handle
     %   expand_deflation_basis  - Expands the deflation basis with additional vectors.
     %   copy                    - Creates a deep copy of the solver object with a new instance ID.
     %--------------------------------------------------------------------------
-    
+
     properties
         deflation_basis
         preconditioner
@@ -38,8 +38,13 @@ classdef DFGMRES < handle
         verbose
         iteration_collector  % Shared among all copies.
         instance_id          % Unique ID in iteration_collector.
+
+        % IJV pattern-reuse preconditioner support (optional, set by set_linear_solver)
+        preconditioner_initializator   % @(I,J,V,n) -> prec_handle  (first setup from triplets)
+        preconditioner_updater         % @(V) -> void               (value-only update)
+        preconditioner_apply_handle    % @(x) -> y                  (apply, stays same after update)
     end
-    
+
     methods
         function obj = DFGMRES(preconditioner_builder, tolerance, max_iterations, tolerance_deflation_basis, verbose)
             %--------------------------------------------------------------------------
@@ -63,12 +68,16 @@ classdef DFGMRES < handle
             obj.max_iterations = max_iterations;
             obj.tolerance_deflation_basis = tolerance_deflation_basis;
             obj.verbose = verbose;
-            
+
             % Initialize the iteration collector and register this instance.
             obj.iteration_collector = LINEAR_SOLVERS.IterationCollector();
             obj.instance_id = obj.iteration_collector.register_instance();
+
+            obj.preconditioner_initializator = [];
+            obj.preconditioner_updater = [];
+            obj.preconditioner_apply_handle = [];
         end
-        
+
         function obj = setup_preconditioner(obj, A)
             %--------------------------------------------------------------------------
             % setup_preconditioner constructs and stores the preconditioner for matrix A.
@@ -91,7 +100,7 @@ classdef DFGMRES < handle
             elapsed_time = toc(t_start);
             obj.iteration_collector.store_preconditioner_time(obj.instance_id, elapsed_time);
         end
-        
+
         function preconditioner = setup_preconditioner_core(obj, A)
             %--------------------------------------------------------------------------
             % setup_preconditioner_core builds a preconditioner for matrix A.
@@ -140,12 +149,12 @@ classdef DFGMRES < handle
             [u, nit] = obj.solve_core(A, b);
             elapsed_time = toc(t_start);
             obj.iteration_collector.store_iteration(obj.instance_id, nit, elapsed_time);
-            
+
             if obj.verbose
                 fprintf('%d|', nit);
             end
         end
-        
+
         function [u, nit] = solve_core(obj, A, b)
             %--------------------------------------------------------------------------
             % solve_core is the core implementation of the flexible GMRES solver.
@@ -163,13 +172,40 @@ classdef DFGMRES < handle
         function obj = expand_deflation_basis(obj, additional_vectors)
             %--------------------------------------------------------------------------
             % expand_deflation_basis adds new vectors to the deflation basis.
-            %
-            %   obj = obj.expand_deflation_basis(additional_vectors)
-            %
-            % This method appends the columns in additional_vectors to the existing
-            % deflation basis.
             %--------------------------------------------------------------------------
             obj.deflation_basis = [obj.deflation_basis, additional_vectors];
+        end
+
+        function obj = setup_preconditioner_ijv(obj, I, J, V, n)
+            %--------------------------------------------------------------------------
+            % setup_preconditioner_ijv  First-time preconditioner setup from COO.
+            %
+            %   obj.setup_preconditioner_ijv(I, J, V, n)
+            %
+            % Calls preconditioner_initializator(I,J,V,n) which creates the
+            % HYPRE instance with the given sparsity pattern and values.
+            % The apply handle is stored as the preconditioner.
+            %--------------------------------------------------------------------------
+            t_start = tic;
+            obj.preconditioner_apply_handle = obj.preconditioner_initializator(I, J, V, n);
+            obj.preconditioner = obj.preconditioner_apply_handle;
+            elapsed_time = toc(t_start);
+            obj.iteration_collector.store_preconditioner_time(obj.instance_id, elapsed_time);
+        end
+
+        function obj = update_preconditioner_values(obj, V)
+            %--------------------------------------------------------------------------
+            % update_preconditioner_values  Value-only preconditioner update.
+            %
+            %   obj.update_preconditioner_values(V)
+            %
+            % Calls preconditioner_updater(V) which updates the matrix values
+            % and re-runs AMG setup.  The apply handle stays the same.
+            %--------------------------------------------------------------------------
+            t_start = tic;
+            obj.preconditioner_updater(V);
+            elapsed_time = toc(t_start);
+            obj.iteration_collector.store_preconditioner_time(obj.instance_id, elapsed_time);
         end
 
         function new_obj = copy(obj)
@@ -182,11 +218,14 @@ classdef DFGMRES < handle
             % but is registered as a separate instance for data collection.
             %--------------------------------------------------------------------------
             new_obj = feval(class(obj), obj.preconditioner_builder, obj.tolerance, ...
-                            obj.max_iterations, obj.tolerance_deflation_basis, obj.verbose);
-            new_obj.deflation_basis = obj.deflation_basis;  
-            new_obj.preconditioner = obj.preconditioner; 
+                obj.max_iterations, obj.tolerance_deflation_basis, obj.verbose);
+            new_obj.deflation_basis = obj.deflation_basis;
+            new_obj.preconditioner = obj.preconditioner;
             new_obj.iteration_collector = obj.iteration_collector;
             new_obj.instance_id = obj.iteration_collector.register_instance();
+            new_obj.preconditioner_initializator = obj.preconditioner_initializator;
+            new_obj.preconditioner_updater = obj.preconditioner_updater;
+            new_obj.preconditioner_apply_handle = obj.preconditioner_apply_handle;
         end
     end
 end

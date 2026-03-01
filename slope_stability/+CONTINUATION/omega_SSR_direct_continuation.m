@@ -2,15 +2,15 @@ function [U, omega, flag] = omega_SSR_direct_continuation(lambda_ini, U_ini, eps
     it_newt_max, it_damp_max, tol, r_min, K_elast, Q, f, ...
     constitutive_matrix_builder, linear_system_solver)
 %--------------------------------------------------------------------------
-% omega_SSR_direct_continuation computes the displacement field U and the 
+% omega_SSR_direct_continuation computes the displacement field U and the
 % parameter omega for a given lambda, according to ALG2.
 %
 % This function solves the nonlinear system
 %
 %       F_lambda(U) = f,    and    omega = -G'(lambda),
 %
-% where F_lambda(U) denotes the internal force vector associated with the 
-% strength reduction parameter lambda, and omega represents the derivative 
+% where F_lambda(U) denotes the internal force vector associated with the
+% strength reduction parameter lambda, and omega represents the derivative
 % (with a minus sign) of the cost function G with respect to lambda.
 %
 % The method first computes the minimizer U of the cost function J_lambda(U)
@@ -50,7 +50,7 @@ omega = 0;  % Set an unrealistic value for omega in case the Newton solver fails
 
 % Compute the minimizer U of the cost function J_lambda and the corresponding flag.
 constitutive_matrix_builder.reduction(lambda_ini);
-[U, flag] = NEWTON.newton(U_ini, tol, it_newt_max, it_damp_max, r_min, K_elast, Q, f, ...
+[U, flag, ~, ~] = NEWTON.newton(U_ini, tol, it_newt_max, it_damp_max, r_min, K_elast, Q, f, ...
     constitutive_matrix_builder, linear_system_solver);
 
 if flag == 1
@@ -66,7 +66,7 @@ beta = min(1, eps / d_lambda);
 U_beta = beta * U_ini + (1 - beta) * U;
 
 constitutive_matrix_builder.reduction(lambda_ini - eps);
-[U_eps, flag] = NEWTON.newton(U_beta, tol, it_newt_max, it_damp_max, r_min, K_elast, Q, f, ...
+[U_eps, flag, ~, ~] = NEWTON.newton(U_beta, tol, it_newt_max, it_damp_max, r_min, K_elast, Q, f, ...
     constitutive_matrix_builder, linear_system_solver);
 
 if flag == 1

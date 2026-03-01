@@ -51,10 +51,14 @@ switch solver_type
             deflation_basis_tolerance, linear_solver_printing);
 
     case {'DFGMRES_HYPRE_BOOMERAMG', 'DFGMRES_BOOMERAMG', 'BOOMERAMG', 'HYPRE_BOOMERAMG'}
-        preconditioner_builder = local_build_boomer_builder(Q, coord, boomeramg_opts);
+        [preconditioner_builder, prec_init, prec_update, prec_apply] = ...
+            local_build_boomer_builder(Q, coord, boomeramg_opts);
         linear_system_solver = LINEAR_SOLVERS.DFGMRES(preconditioner_builder, ...
             linear_solver_tolerance, linear_solver_maxit, ...
             deflation_basis_tolerance, linear_solver_printing);
+        linear_system_solver.preconditioner_initializator = prec_init;
+        linear_system_solver.preconditioner_updater = prec_update;
+        linear_system_solver.preconditioner_apply_handle = prec_apply;
 
     otherwise
         error('Bad choice of solver type: %s', char(solver_type));
@@ -62,7 +66,7 @@ end
 
 end
 
-function preconditioner_builder = local_build_boomer_builder(Q, coord, opts_in)
+function [preconditioner_builder, prec_init, prec_update, prec_apply] = local_build_boomer_builder(Q, coord, opts_in)
 
 if exist('hypre_boomeramg_mex', 'file') ~= 3
     this_dir = fileparts(mfilename('fullpath'));
@@ -125,6 +129,29 @@ if ~isfield(opts, 'use_as_preconditioner')
 end
 
 preconditioner_builder = @(A) local_build_boomer_prec(A, null_space, opts, auto_dof_func, instance_id);
+
+% IJV pattern-reuse closures
+prec_init   = @(I, J, V, n) local_init_boomer_ijv(I, J, V, n, null_space, opts, instance_id);
+prec_update = @(V) LINEAR_SOLVERS.hypre_boomeramg_update_values(V, instance_id);
+prec_apply  = @(x) LINEAR_SOLVERS.hypre_boomeramg_apply(x, instance_id);
+
+end
+
+function prec_handle = local_init_boomer_ijv(I, J, V, n, null_space_template, opts_template, instance_id)
+%LOCAL_INIT_BOOMER_IJV  First-time setup of BoomerAMG from COO triplets.
+
+opts = opts_template;
+null_space = [];
+if ~isempty(null_space_template)
+    if size(null_space_template, 1) == n
+        null_space = null_space_template;
+    end
+end
+if ~isfield(opts, 'dof_func') && isfield(opts, '__auto_dof_func') && numel(opts.__auto_dof_func) == n
+    opts.dof_func = opts.__auto_dof_func(:);
+end
+LINEAR_SOLVERS.hypre_boomeramg_setup_ijv(I, J, V, n, null_space, opts, instance_id);
+prec_handle = @(x) LINEAR_SOLVERS.hypre_boomeramg_apply(x, instance_id);
 
 end
 
