@@ -85,6 +85,7 @@ classdef CONSTITUTIVE < handle
         ref_J               % Column indices of maximal sparsity pattern (from find)
         ref_idx             % Linear indices into n_Q x n_Q matrix for value extraction
         V_elast_QQ          % Elastic K_elast(Q,Q) values at ref_I/ref_J positions
+        transpose_perm      % Permutation: V(transpose_perm) maps (i,j) -> (j,i) for symmetrization
         Q_flat_stored       % Flat indices of free DOFs (for element assembly)
 
         % Element-level tangent assembly infrastructure
@@ -163,6 +164,7 @@ classdef CONSTITUTIVE < handle
             obj.ref_J = [];
             obj.ref_idx = [];
             obj.V_elast_QQ = [];
+            obj.transpose_perm = [];
             obj.Q_flat_stored = [];
 
             % Element-level assembly not yet initialized.
@@ -491,11 +493,16 @@ classdef CONSTITUTIVE < handle
             D_e  = sparse(obj.iD(:), obj.jD(:), vD_e, ...
                 obj.n_strain * obj.n_int, obj.n_strain * obj.n_int);
             K_elast_QQ = obj.B_Q' * D_e * obj.B_Q;
-            % K_elast_QQ = (K_elast_QQ + K_elast_QQ') / 2;  % symmetrisation commented out
+            K_elast_QQ = (K_elast_QQ + K_elast_QQ') / 2;  % ensure symmetric pattern & values
 
             % Extract the maximal (I, J, V_elast) pattern — one-time find().
             [obj.ref_I, obj.ref_J, obj.V_elast_QQ] = find(K_elast_QQ);
             obj.ref_idx = sub2ind([obj.n_Q, obj.n_Q], obj.ref_I, obj.ref_J);
+
+            % Compute transpose permutation: maps entry (i,j) to entry (j,i).
+            % Used to symmetrize K_r values (matching main branch behaviour).
+            transpose_ref_idx = sub2ind([obj.n_Q, obj.n_Q], obj.ref_J, obj.ref_I);
+            [~, obj.transpose_perm] = ismember(transpose_ref_idx, obj.ref_idx);
 
             obj.pattern_initialized = true;
             fprintf('done  (%.1f s, n_Q = %d, nnz = %d)\n', ...
@@ -576,10 +583,13 @@ classdef CONSTITUTIVE < handle
             %
             % Returns the row/col indices (same every call) and the values
             % V_kr = r * V_elast + (1-r) * V_tangent.
+            % The result is symmetrized: V_kr(i,j) = (V_kr(i,j)+V_kr(j,i))/2,
+            % matching the main branch behaviour (K_tangent = (K_tangent+K_tangent')/2).
             % obj.DS must already hold the current tangent moduli.
             %--------------------------------------------------------------------------
             V_tang = obj.build_K_tangent_QQ_vals();
             V_kr   = r * obj.V_elast_QQ + (1 - r) * V_tang;
+            V_kr   = (V_kr + V_kr(obj.transpose_perm)) / 2;
             I = obj.ref_I;
             J = obj.ref_J;
         end
