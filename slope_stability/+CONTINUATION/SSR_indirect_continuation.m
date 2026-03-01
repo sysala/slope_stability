@@ -96,6 +96,31 @@ stats.newton_timing.sparsersb_build     = 0;
 stats.newton_timing.expand_deflation_W  = 0;
 stats.newton_timing.expand_deflation_V  = 0;
 
+% Sub-profiling: build_F_and_DS_all breakdown
+stats.newton_timing.build_F_DS__reduction      = 0;
+stats.newton_timing.build_F_DS__stress_tangent = 0;
+stats.newton_timing.build_F_DS__build_F        = 0;
+stats.newton_timing.build_F_DS__n_calls        = 0;
+
+% Sub-profiling: damping_ALG5 breakdown
+stats.newton_timing.damping__build_F = 0;
+stats.newton_timing.damping__norm    = 0;
+stats.newton_timing.damping__n_iters = 0;
+stats.newton_timing.damping__n_calls = 0;
+
+% Sub-profiling: dfgmres_solver breakdown (V + W combined)
+stats.newton_timing.solve__precond       = 0;
+stats.newton_timing.solve__project       = 0;
+stats.newton_timing.solve__matvec        = 0;
+stats.newton_timing.solve__ortho         = 0;
+stats.newton_timing.solve__leastsq       = 0;
+stats.newton_timing.solve__init          = 0;
+stats.newton_timing.solve__reconstruct   = 0;
+stats.newton_timing.solve__n_gmres_iters = 0;
+stats.newton_timing.solve__n_matvecs     = 0;
+stats.newton_timing.solve__n_prec_applies = 0;
+stats.newton_timing.solve__n_calls       = 0;
+
 lambda_hist = zeros(1, 1000);    % History of lambda values.
 omega_hist = zeros(1, 1000);     % History of omega values.
 Umax_hist  = zeros(1, 1000);      % History of maximum displacement values.

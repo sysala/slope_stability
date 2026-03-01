@@ -99,6 +99,10 @@ classdef CONSTITUTIVE < handle
         elem_data_set       % Flag: element geometry data has been provided
         elem_assembly_ready % Flag: scatter map has been built
         elem_use_mex        % Flag: mex assembly function is available
+        use_3D_mex          % Flag: constitutive_problem_3D mex files available
+
+        % Per-call timing breakdown (set by build_F_and_DS_all, read by caller)
+        last_build_F_DS_timing  % struct: t_reduction, t_stress_tangent, t_build_F
     end
 
     methods
@@ -173,6 +177,10 @@ classdef CONSTITUTIVE < handle
             obj.elem_data_set = false;
             obj.elem_assembly_ready = false;
             obj.elem_use_mex = (exist('assemble_K_tangent_vals', 'file') == 3);
+            obj.use_3D_mex = (dim == 3) && ...
+                (exist('constitutive_problem_3D_S_mex', 'file') == 3) && ...
+                (exist('constitutive_problem_3D_SDS_mex', 'file') == 3);
+            obj.last_build_F_DS_timing = struct();
         end
 
         function obj = reduction(obj, lambda)
@@ -217,7 +225,9 @@ classdef CONSTITUTIVE < handle
             t_start = tic;
             E = obj.B * U(:);  % Strain at integration points.
             E = reshape(E, obj.n_strain, []);
-            if obj.dim == 2
+            if obj.use_3D_mex
+                obj.S = constitutive_problem_3D_S_mex(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
+            elseif obj.dim == 2
                 [obj.S] = CONSTITUTIVE_PROBLEM.constitutive_problem_2D(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
             elseif obj.dim == 3
                 [obj.S] = CONSTITUTIVE_PROBLEM.constitutive_problem_3D(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
@@ -246,7 +256,9 @@ classdef CONSTITUTIVE < handle
             t_start = tic;
             E = obj.B * U(:);  % Strain at integration points.
             E = reshape(E, obj.n_strain, []);
-            if obj.dim == 2
+            if obj.use_3D_mex
+                [obj.S, obj.DS] = constitutive_problem_3D_SDS_mex(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
+            elseif obj.dim == 2
                 [obj.S, obj.DS] = CONSTITUTIVE_PROBLEM.constitutive_problem_2D(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
             elseif obj.dim == 3
                 [obj.S, obj.DS] = CONSTITUTIVE_PROBLEM.constitutive_problem_3D(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
@@ -500,10 +512,24 @@ classdef CONSTITUTIVE < handle
             % build_F_and_DS_all  Reduction + stress/tangent + build F.
             % Same as build_F_K_tangent_all but skips the sparse K assembly.
             % After this call obj.DS holds the current tangent moduli.
+            % Per-line timing is stored in obj.last_build_F_DS_timing.
             %--------------------------------------------------------------------------
+            t_tmp = tic;
             obj.reduction(lambda);
+            t_red = toc(t_tmp);
+
+            t_tmp = tic;
             obj.constitutive_problem_stress_tangent(U);
+            t_st = toc(t_tmp);
+
+            t_tmp = tic;
             F = obj.build_F();
+            t_bf = toc(t_tmp);
+
+            obj.last_build_F_DS_timing = struct( ...
+                't_reduction', t_red, ...
+                't_stress_tangent', t_st, ...
+                't_build_F', t_bf);
         end
 
         function F = build_F_and_DS_reduced(obj, U)

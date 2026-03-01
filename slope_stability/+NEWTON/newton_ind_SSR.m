@@ -51,11 +51,46 @@ t_damping = 0;
 t_expand_deflation_W = 0;
 t_expand_deflation_V = 0;
 
+% Sub-timing accumulators: build_F_and_DS_all breakdown
+t_build_F_DS__reduction      = 0;
+t_build_F_DS__stress_tangent = 0;
+t_build_F_DS__build_F        = 0;
+n_build_F_DS__calls          = 0;
+
+% Sub-timing accumulators: damping_ALG5 breakdown
+t_damping__build_F = 0;
+t_damping__norm    = 0;
+n_damping__iters   = 0;
+n_damping__calls   = 0;
+
+% Sub-timing accumulators: dfgmres_solver breakdown (V + W combined)
+t_solve__precond     = 0;
+t_solve__project     = 0;
+t_solve__matvec      = 0;
+t_solve__ortho       = 0;
+t_solve__leastsq     = 0;
+t_solve__init        = 0;
+t_solve__reconstruct = 0;
+n_solve__gmres_iters = 0;
+n_solve__matvecs     = 0;
+n_solve__prec_applies = 0;
+n_solve__calls       = 0;
+
 % One-time: restrict B to free DOFs and build maximal sparsity pattern.
 if ~constitutive_matrix_builder.pattern_initialized
     constitutive_matrix_builder.init_K_r_pattern(Q);
 end
 n_Q = constitutive_matrix_builder.n_Q;
+
+% Precompute upper-triangle mask for sparsersb "unique","sym" constructor.
+% ref_I/ref_J are the same every call, so we mask once.
+upper_mask = (constitutive_matrix_builder.ref_I <= constitutive_matrix_builder.ref_J);
+K_I_sym = constitutive_matrix_builder.ref_I(upper_mask);
+K_J_sym = constitutive_matrix_builder.ref_J(upper_mask);
+
+% Flag for HYPRE IJV pattern reuse: first call does full setup,
+% subsequent calls only update values (same sparsity pattern).
+hypre_pattern_initialized = false;
 
 % Semismooth Newton loop.
 while true
@@ -67,6 +102,13 @@ while true
         t_tmp = tic;
         F = constitutive_matrix_builder.build_F_and_DS_all(lambda_it, U_it);
         t_build_F_and_DS = t_build_F_and_DS + toc(t_tmp);
+        n_build_F_DS__calls = n_build_F_DS__calls + 1;
+        sub = constitutive_matrix_builder.last_build_F_DS_timing;
+        if ~isempty(fieldnames(sub))
+            t_build_F_DS__reduction      = t_build_F_DS__reduction      + sub.t_reduction;
+            t_build_F_DS__stress_tangent = t_build_F_DS__stress_tangent + sub.t_stress_tangent;
+            t_build_F_DS__build_F        = t_build_F_DS__build_F        + sub.t_build_F;
+        end
         criterion = norm(F(Q) - f(Q));
         rel_resid = criterion / norm_f;
 
@@ -86,7 +128,7 @@ while true
     t_K_r_assembly = t_K_r_assembly + toc(t_tmp);
 
     t_tmp = tic;
-    K_rQQ = sparsersb(K_I, K_J, K_V, n_Q, n_Q);
+    K_rQQ = sparsersb(K_I_sym, K_J_sym, K_V(upper_mask), n_Q, n_Q, "unique", "sym");
     t_sparsersb_build = t_sparsersb_build + toc(t_tmp);
 
     %% Estimate Newton increment.
@@ -96,9 +138,14 @@ while true
     t_build_F_eps = t_build_F_eps + toc(t_tmp);
     G = (F_eps - F) / eps;
 
-    %% Setup preconditioner (always via IJV — HYPRE reuses pattern automatically).
+    %% Setup/update preconditioner (HYPRE reuses sparsity pattern after first call).
     t_tmp = tic;
-    linear_solver.setup_preconditioner_ijv(K_I, K_J, K_V, n_Q);
+    if ~hypre_pattern_initialized
+        linear_solver.setup_preconditioner_ijv(K_I, K_J, K_V, n_Q);
+        hypre_pattern_initialized = true;
+    else
+        linear_solver.update_preconditioner_values(K_V);
+    end
     t_setup_preconditioner = t_setup_preconditioner + toc(t_tmp);
 
     t_tmp = tic;
@@ -108,17 +155,49 @@ while true
     t_tmp = tic;
     W(Q) = linear_solver.solve(K_rQQ, -G(Q));
     t_solve_W = t_solve_W + toc(t_tmp);
+    n_solve__calls = n_solve__calls + 1;
+    st = linear_solver.last_solve_timing;
+    if ~isempty(fieldnames(st))
+        t_solve__precond     = t_solve__precond     + st.t_precond;
+        t_solve__project     = t_solve__project     + st.t_project;
+        t_solve__matvec      = t_solve__matvec      + st.t_matvec;
+        t_solve__ortho       = t_solve__ortho       + st.t_ortho;
+        t_solve__leastsq     = t_solve__leastsq     + st.t_leastsq;
+        t_solve__init        = t_solve__init        + st.t_init;
+        t_solve__reconstruct = t_solve__reconstruct + st.t_reconstruct;
+        n_solve__gmres_iters = n_solve__gmres_iters + st.n_iters;
+        n_solve__matvecs     = n_solve__matvecs     + st.n_matvecs;
+        n_solve__prec_applies = n_solve__prec_applies + st.n_prec_applies;
+    end
     t_tmp = tic;
     V(Q) = linear_solver.solve(K_rQQ, f(Q) - F(Q));
     t_solve_V = t_solve_V + toc(t_tmp);
+    n_solve__calls = n_solve__calls + 1;
+    st = linear_solver.last_solve_timing;
+    if ~isempty(fieldnames(st))
+        t_solve__precond     = t_solve__precond     + st.t_precond;
+        t_solve__project     = t_solve__project     + st.t_project;
+        t_solve__matvec      = t_solve__matvec      + st.t_matvec;
+        t_solve__ortho       = t_solve__ortho       + st.t_ortho;
+        t_solve__leastsq     = t_solve__leastsq     + st.t_leastsq;
+        t_solve__init        = t_solve__init        + st.t_init;
+        t_solve__reconstruct = t_solve__reconstruct + st.t_reconstruct;
+        n_solve__gmres_iters = n_solve__gmres_iters + st.n_iters;
+        n_solve__matvecs     = n_solve__matvecs     + st.n_matvecs;
+        n_solve__prec_applies = n_solve__prec_applies + st.n_prec_applies;
+    end
 
     d_l = - (f(Q)' * V(Q)) / (f(Q)' * W(Q));
     d_U = V + d_l * W;
 
     %% Line search damping.
     t_tmp = tic;
-    alpha = NEWTON.damping_ALG5(it_damp_max, U_it, lambda_it, d_U, d_l, f, criterion, Q, constitutive_matrix_builder);
+    [alpha, damp_timing] = NEWTON.damping_ALG5(it_damp_max, U_it, lambda_it, d_U, d_l, f, criterion, Q, constitutive_matrix_builder);
     t_damping = t_damping + toc(t_tmp);
+    t_damping__build_F = t_damping__build_F + damp_timing.t_build_F;
+    t_damping__norm    = t_damping__norm    + damp_timing.t_norm;
+    n_damping__iters   = n_damping__iters   + damp_timing.n_iters;
+    n_damping__calls   = n_damping__calls   + 1;
     alpha_history(it) = alpha;
 
     %% Regularization adjustments.
@@ -185,5 +264,30 @@ history.timing.K_r_assembly        = t_K_r_assembly;
 history.timing.sparsersb_build     = t_sparsersb_build;
 history.timing.expand_deflation_W  = t_expand_deflation_W;
 history.timing.expand_deflation_V  = t_expand_deflation_V;
+
+% Sub-profiling: build_F_and_DS_all breakdown
+history.timing.build_F_DS__reduction      = t_build_F_DS__reduction;
+history.timing.build_F_DS__stress_tangent = t_build_F_DS__stress_tangent;
+history.timing.build_F_DS__build_F        = t_build_F_DS__build_F;
+history.timing.build_F_DS__n_calls        = n_build_F_DS__calls;
+
+% Sub-profiling: damping_ALG5 breakdown
+history.timing.damping__build_F = t_damping__build_F;
+history.timing.damping__norm    = t_damping__norm;
+history.timing.damping__n_iters = n_damping__iters;
+history.timing.damping__n_calls = n_damping__calls;
+
+% Sub-profiling: dfgmres_solver breakdown (V + W combined)
+history.timing.solve__precond      = t_solve__precond;
+history.timing.solve__project      = t_solve__project;
+history.timing.solve__matvec       = t_solve__matvec;
+history.timing.solve__ortho        = t_solve__ortho;
+history.timing.solve__leastsq      = t_solve__leastsq;
+history.timing.solve__init         = t_solve__init;
+history.timing.solve__reconstruct  = t_solve__reconstruct;
+history.timing.solve__n_gmres_iters = n_solve__gmres_iters;
+history.timing.solve__n_matvecs    = n_solve__matvecs;
+history.timing.solve__n_prec_applies = n_solve__prec_applies;
+history.timing.solve__n_calls      = n_solve__calls;
 
 end % function

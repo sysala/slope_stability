@@ -43,6 +43,9 @@ classdef DFGMRES < handle
         preconditioner_initializator   % @(I,J,V,n) -> prec_handle  (first setup from triplets)
         preconditioner_updater         % @(V) -> void               (value-only update)
         preconditioner_apply_handle    % @(x) -> y                  (apply, stays same after update)
+
+        % Per-solve timing breakdown (set by solve_core, read by caller)
+        last_solve_timing              % struct with t_precond, t_matvec, t_ortho, etc.
     end
 
     methods
@@ -76,6 +79,7 @@ classdef DFGMRES < handle
             obj.preconditioner_initializator = [];
             obj.preconditioner_updater = [];
             obj.preconditioner_apply_handle = [];
+            obj.last_solve_timing = struct();
         end
 
         function obj = setup_preconditioner(obj, A)
@@ -144,7 +148,9 @@ classdef DFGMRES < handle
             %
             % This method wraps the core flexible GMRES solver, records the number
             % of iterations and time taken, and optionally prints verbose output.
+            % After return, obj.last_solve_timing holds per-section breakdown.
             %--------------------------------------------------------------------------
+            obj.last_solve_timing = struct();   % clear before call
             t_start = tic;
             [u, nit] = obj.solve_core(A, b);
             elapsed_time = toc(t_start);
@@ -162,11 +168,13 @@ classdef DFGMRES < handle
             %   [u, nit] = obj.solve_core(A, b)
             %
             % It calls the function flexible_GMRES_deflate from the LINEAR_SOLVERS
-            % package with the provided parameters.
+            % package with the provided parameters.  Per-section timing is
+            % stored in obj.last_solve_timing.
             %--------------------------------------------------------------------------
-            [u, nit, ~] = LINEAR_SOLVERS.dfgmres_solver(A, b, ...
+            [u, nit, ~, solve_timing] = LINEAR_SOLVERS.dfgmres_solver(A, b, ...
                 obj.preconditioner, obj.deflation_basis, ...
                 obj.max_iterations, obj.tolerance, []);
+            obj.last_solve_timing = solve_timing;
         end
 
         function obj = expand_deflation_basis(obj, additional_vectors)
@@ -226,6 +234,7 @@ classdef DFGMRES < handle
             new_obj.preconditioner_initializator = obj.preconditioner_initializator;
             new_obj.preconditioner_updater = obj.preconditioner_updater;
             new_obj.preconditioner_apply_handle = obj.preconditioner_apply_handle;
+            new_obj.last_solve_timing = struct();
         end
     end
 end

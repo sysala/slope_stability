@@ -118,13 +118,19 @@ end
 %% Newton Profiler Summary
 if exist('stats', 'var') && isfield(stats, 'newton_timing')
     nt = stats.newton_timing;
-    labels = fieldnames(nt);
-    times  = cellfun(@(f) nt.(f), labels);
-    total  = sum(times);
 
-    [times, idx] = sort(times, 'descend');
-    labels = labels(idx);
-    pcts   = 100 * times / total;
+    %% --- Top-level timing table (existing fields only) ---
+    top_fields = {'build_F_and_DS', 'solve_V', 'A_orthogonalize', 'damping', ...
+        'setup_preconditioner', 'build_F_eps', 'solve_W', ...
+        'K_r_assembly', 'sparsersb_build', ...
+        'expand_deflation_W', 'expand_deflation_V'};
+    top_labels = top_fields(isfield(nt, top_fields));
+    top_times  = cellfun(@(f) nt.(f), top_labels);
+    total      = sum(top_times);
+
+    [top_times, idx] = sort(top_times, 'descend');
+    top_labels = top_labels(idx);
+    pcts       = 100 * top_times / total;
 
     desc_map = struct( ...
         'build_F_and_DS',      'build_F_and_DS_all     (constitutive F + DS)', ...
@@ -143,17 +149,70 @@ if exist('stats', 'var') && isfield(stats, 'newton_timing')
     fprintf('============================================================\n');
     fprintf('  %-6s  %-8s  %s\n', 'Time', '  %', 'Operation');
     fprintf('  %-6s  %-8s  %s\n', '------', '------', '------------------------------');
-    for k = 1:numel(labels)
-        lbl = labels{k};
+    for k = 1:numel(top_labels)
+        lbl = top_labels{k};
         if isfield(desc_map, lbl)
             desc = desc_map.(lbl);
         else
             desc = lbl;
         end
-        fprintf('  %6.1fs  %5.1f%%   %s\n', times(k), pcts(k), desc);
+        fprintf('  %6.1fs  %5.1f%%   %s\n', top_times(k), pcts(k), desc);
     end
     fprintf('  %-6s  %-8s  %s\n', '------', '------', '------------------------------');
     fprintf('  %6.1fs  %5.1f%%   %s\n', total, 100.0, 'TOTAL');
+    fprintf('============================================================\n');
+
+    %% --- Sub-profiling: build_F_and_DS_all breakdown ---
+    if isfield(nt, 'build_F_DS__n_calls')
+        fprintf('\n  Sub-profile: build_F_and_DS_all  (%d calls)\n', nt.build_F_DS__n_calls);
+        fprintf('  %-6s  %-8s  %s\n', '------', '------', '------------------------------');
+        sub_items = { ...
+            nt.build_F_DS__reduction,      'reduction(lambda)'; ...
+            nt.build_F_DS__stress_tangent, 'constitutive_problem_stress_tangent(U)'; ...
+            nt.build_F_DS__build_F,        'build_F()'};
+        sub_total = nt.build_F_and_DS;
+        for k = 1:size(sub_items, 1)
+            fprintf('  %6.2fs  %5.1f%%   %s\n', sub_items{k,1}, ...
+                100 * sub_items{k,1} / max(sub_total, 1e-12), sub_items{k,2});
+        end
+    end
+
+    %% --- Sub-profiling: damping_ALG5 breakdown ---
+    if isfield(nt, 'damping__n_calls')
+        fprintf('\n  Sub-profile: damping_ALG5  (%d calls, %d damp iters total)\n', ...
+            nt.damping__n_calls, nt.damping__n_iters);
+        fprintf('  %-6s  %-8s  %s\n', '------', '------', '------------------------------');
+        sub_items = { ...
+            nt.damping__build_F, 'build_F_all  (constitutive evaluation)'; ...
+            nt.damping__norm,    'norm(F(Q)-f(Q))  (residual check)'};
+        sub_total = nt.damping;
+        for k = 1:size(sub_items, 1)
+            fprintf('  %6.2fs  %5.1f%%   %s\n', sub_items{k,1}, ...
+                100 * sub_items{k,1} / max(sub_total, 1e-12), sub_items{k,2});
+        end
+    end
+
+    %% --- Sub-profiling: dfgmres_solver breakdown (V+W combined) ---
+    if isfield(nt, 'solve__n_calls')
+        fprintf('\n  Sub-profile: dfgmres_solver  (%d calls, %d GMRES iters, %d matvecs, %d prec applies)\n', ...
+            nt.solve__n_calls, nt.solve__n_gmres_iters, ...
+            nt.solve__n_matvecs, nt.solve__n_prec_applies);
+        fprintf('  %-6s  %-8s  %s\n', '------', '------', '------------------------------');
+        sub_items = { ...
+            nt.solve__precond,     'M(v)  preconditioner apply'; ...
+            nt.solve__matvec,      'A*w   matrix-vector product'; ...
+            nt.solve__project,     'Proj(w) deflation projection'; ...
+            nt.solve__ortho,       'Arnoldi orthogonalisation'; ...
+            nt.solve__leastsq,     'least-squares + residual check'; ...
+            nt.solve__init,        'init (coarse solve + r0)'; ...
+            nt.solve__reconstruct, 'solution reconstruction'};
+        sub_total = nt.solve_V + nt.solve_W;
+        for k = 1:size(sub_items, 1)
+            fprintf('  %6.2fs  %5.1f%%   %s\n', sub_items{k,1}, ...
+                100 * sub_items{k,1} / max(sub_total, 1e-12), sub_items{k,2});
+        end
+    end
+
     fprintf('============================================================\n');
 end
 
