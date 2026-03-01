@@ -1,13 +1,13 @@
-function [K, B, WEIGHT] = elastic_stiffness_matrix_3D(ELEM, COORD, shear, bulk, DHatP1, DHatP2, DHatP3, WF)
+function [K, B, WEIGHT, DPhi1, DPhi2, DPhi3] = elastic_stiffness_matrix_3D(ELEM, COORD, shear, bulk, DHatP1, DHatP2, DHatP3, WF)
 %--------------------------------------------------------------------------
-% elastic_stiffness_matrix_3D assembles the elastic stiffness matrix for a 
+% elastic_stiffness_matrix_3D assembles the elastic stiffness matrix for a
 % 3D elastoplastic body.
 %
 % This function computes the elastic stiffness matrix K, the strain-displacement
-% matrix B, and the integration weights for each quadrature point. The procedure 
-% involves computing the Jacobian of the transformation from the reference 
-% element to the current element, evaluating the derivatives of the basis 
-% functions in the global coordinate system, assembling the strain-displacement 
+% matrix B, and the integration weights for each quadrature point. The procedure
+% involves computing the Jacobian of the transformation from the reference
+% element to the current element, evaluating the derivatives of the basis
+% functions in the global coordinate system, assembling the strain-displacement
 % matrix, and finally assembling the elastic stiffness matrix.
 %
 % INPUT ARGUMENTS:
@@ -40,7 +40,7 @@ n_q = length(WF);       % Number of quadrature points per element
 n_int = n_e * n_q;      % Total number of integration points
 
 %
-% Compute the Jacobian, its determinant, inverse, and the derivatives of 
+% Compute the Jacobian, its determinant, inverse, and the derivatives of
 % local basis functions with respect to the global coordinates.
 %
 
@@ -77,17 +77,17 @@ J33 = sum(COORDint3 .* DHatPhi3);
 DET = J11 .* (J22 .* J33 - J32 .* J23) - J12 .* (J21 .* J33 - J23 .* J31) + J13 .* (J21 .* J32 - J22 .* J31);
 
 % Compute components of the inverse Jacobian.
-Jinv11 =  (J22 .* J33 - J23 .* J32) ./ DET; 
-Jinv12 = -(J12 .* J33 - J13 .* J32) ./ DET; 
-Jinv13 =  (J12 .* J23 - J13 .* J22) ./ DET; 
+Jinv11 =  (J22 .* J33 - J23 .* J32) ./ DET;
+Jinv12 = -(J12 .* J33 - J13 .* J32) ./ DET;
+Jinv13 =  (J12 .* J23 - J13 .* J22) ./ DET;
 
-Jinv21 = -(J21 .* J33 - J23 .* J31) ./ DET; 
-Jinv22 =  (J11 .* J33 - J13 .* J31) ./ DET; 
-Jinv23 = -(J11 .* J23 - J13 .* J21) ./ DET; 
+Jinv21 = -(J21 .* J33 - J23 .* J31) ./ DET;
+Jinv22 =  (J11 .* J33 - J13 .* J31) ./ DET;
+Jinv23 = -(J11 .* J23 - J13 .* J21) ./ DET;
 
-Jinv31 =  (J21 .* J32 - J22 .* J31) ./ DET; 
-Jinv32 = -(J11 .* J32 - J12 .* J31) ./ DET; 
-Jinv33 =  (J11 .* J22 - J12 .* J21) ./ DET; 
+Jinv31 =  (J21 .* J32 - J22 .* J31) ./ DET;
+Jinv32 = -(J11 .* J32 - J12 .* J31) ./ DET;
+Jinv33 =  (J11 .* J22 - J12 .* J21) ./ DET;
 
 % Transform derivatives of basis functions to global coordinates.
 % Each DPhi* has size: (n_p, n_int)
@@ -138,7 +138,7 @@ B = sparse(iB(:), jB(:), vB(:), 6*n_int, 3*n_n);
 
 % Define the elastic tensor components.
 IOTA = [1; 1; 1; 0; 0; 0];
-VOL = IOTA * IOTA'; 
+VOL = IOTA * IOTA';
 DEV = diag([1, 1, 1, 1/2, 1/2, 1/2]) - VOL / 3;
 % ELAST is arranged column-wise for each integration point, size: (36, n_int)
 ELAST = 2 * DEV(:) * shear + VOL(:) * bulk;
@@ -158,5 +158,5 @@ D = sparse(iD, jD, vD);
 % K = B' * D * B, size: (3*n_n, 3*n_n)
 %
 K = B' * D * B;
- 
+
 end  % end of function

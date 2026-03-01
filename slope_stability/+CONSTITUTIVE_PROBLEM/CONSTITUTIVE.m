@@ -85,6 +85,20 @@ classdef CONSTITUTIVE < handle
         ref_J               % Column indices of maximal sparsity pattern (from find)
         ref_idx             % Linear indices into n_Q x n_Q matrix for value extraction
         V_elast_QQ          % Elastic K_elast(Q,Q) values at ref_I/ref_J positions
+        Q_flat_stored       % Flat indices of free DOFs (for element assembly)
+
+        % Element-level tangent assembly infrastructure
+        elem_ELEM           % Element connectivity (n_p x n_e)
+        elem_DPhi1          % Global basis derivatives d/dx1 (n_p x n_int)
+        elem_DPhi2          % Global basis derivatives d/dx2 (n_p x n_int)
+        elem_DPhi3          % Global basis derivatives d/dx3 (n_p x n_int)
+        elem_n_p            % Nodes per element
+        elem_n_e            % Number of elements
+        elem_n_q            % Quadrature points per element
+        elem_scatter_map    % Scatter map: nzval indices (n_local_dof^2 x n_e), int64, 0=skip
+        elem_data_set       % Flag: element geometry data has been provided
+        elem_assembly_ready % Flag: scatter map has been built
+        elem_use_mex        % Flag: mex assembly function is available
     end
 
     methods
@@ -145,6 +159,20 @@ classdef CONSTITUTIVE < handle
             obj.ref_J = [];
             obj.ref_idx = [];
             obj.V_elast_QQ = [];
+            obj.Q_flat_stored = [];
+
+            % Element-level assembly not yet initialized.
+            obj.elem_ELEM = [];
+            obj.elem_DPhi1 = [];
+            obj.elem_DPhi2 = [];
+            obj.elem_DPhi3 = [];
+            obj.elem_n_p = 0;
+            obj.elem_n_e = 0;
+            obj.elem_n_q = 0;
+            obj.elem_scatter_map = [];
+            obj.elem_data_set = false;
+            obj.elem_assembly_ready = false;
+            obj.elem_use_mex = (exist('assemble_K_tangent_vals', 'file') == 3);
         end
 
         function obj = reduction(obj, lambda)
@@ -430,6 +458,7 @@ classdef CONSTITUTIVE < handle
             t0 = tic;
 
             Q_flat = find(Q(:));
+            obj.Q_flat_stored = Q_flat;
             obj.B_Q = obj.B(:, Q_flat);       % restrict to free DOFs
             obj.n_Q = numel(Q_flat);
 
@@ -459,6 +488,11 @@ classdef CONSTITUTIVE < handle
             obj.pattern_initialized = true;
             fprintf('done  (%.1f s, n_Q = %d, nnz = %d)\n', ...
                 toc(t0), obj.n_Q, numel(obj.ref_I));
+
+            % Build element-level scatter map if element data was provided.
+            if obj.elem_data_set
+                obj.build_scatter_map();
+            end
         end
 
         function F = build_F_and_DS_all(obj, lambda, U)
@@ -484,13 +518,21 @@ classdef CONSTITUTIVE < handle
 
         function V_tang = build_K_tangent_QQ_vals(obj)
             %--------------------------------------------------------------------------
-            % build_K_tangent_QQ_vals  Build K_tangent(Q,Q) = B_Q' * D_tang * B_Q
-            % and extract values at the reference sparsity pattern positions.
+            % build_K_tangent_QQ_vals  Build K_tangent(Q,Q) values.
             %
-            %   V_tang = obj.build_K_tangent_QQ_vals()
-            %
-            % Returns a column vector of the same length as ref_I/ref_J.
-            % obj.DS must already hold the current tangent moduli.
+            % Dispatches to element-level assembly (mex or Octave) if
+            % available, otherwise falls back to global B_Q' * D_t * B_Q.
+            %--------------------------------------------------------------------------
+            if obj.elem_assembly_ready
+                V_tang = obj.build_K_tangent_QQ_vals_element();
+            else
+                V_tang = obj.build_K_tangent_QQ_vals_global();
+            end
+        end
+
+        function V_tang = build_K_tangent_QQ_vals_global(obj)
+            %--------------------------------------------------------------------------
+            % build_K_tangent_QQ_vals_global  Original global SpMM method.
             %--------------------------------------------------------------------------
             vD_t = obj.vD_pre(:) .* obj.DS(:);
             D_t  = sparse(obj.iD(:), obj.jD(:), vD_t, ...
@@ -514,6 +556,164 @@ classdef CONSTITUTIVE < handle
             V_kr   = r * obj.V_elast_QQ + (1 - r) * V_tang;
             I = obj.ref_I;
             J = obj.ref_J;
+        end
+
+        % ============================================================
+        %  Element-level tangent assembly
+        % ============================================================
+
+        function obj = set_element_data(obj, ELEM, DPhi1, DPhi2, DPhi3)
+            %--------------------------------------------------------------------------
+            % set_element_data  Provide element connectivity and geometric
+            % derivative data for element-level tangent assembly.
+            %
+            %   obj.set_element_data(ELEM, DPhi1, DPhi2, DPhi3)
+            %
+            % ELEM   - element connectivity (n_p x n_e)
+            % DPhi1  - global basis derivatives d/dx1 (n_p x n_int)
+            % DPhi2  - global basis derivatives d/dx2 (n_p x n_int)
+            % DPhi3  - global basis derivatives d/dx3 (n_p x n_int)
+            %--------------------------------------------------------------------------
+            obj.elem_ELEM  = ELEM;
+            obj.elem_DPhi1 = DPhi1;
+            obj.elem_DPhi2 = DPhi2;
+            obj.elem_DPhi3 = DPhi3;
+            obj.elem_n_p   = size(ELEM, 1);
+            obj.elem_n_e   = size(ELEM, 2);
+            obj.elem_n_q   = obj.n_int / obj.elem_n_e;
+            obj.elem_data_set = true;
+            obj.elem_use_mex = (exist('assemble_K_tangent_vals', 'file') == 3);
+            fprintf('Element data set: n_p=%d, n_e=%d, n_q=%d, mex=%d\n', ...
+                obj.elem_n_p, obj.elem_n_e, obj.elem_n_q, obj.elem_use_mex);
+
+            % If the sparsity pattern is already initialised, build scatter map now.
+            if obj.pattern_initialized
+                obj.build_scatter_map();
+            end
+        end
+
+        function obj = build_scatter_map(obj)
+            %--------------------------------------------------------------------------
+            % build_scatter_map  Build the scatter map that maps each local
+            % element matrix entry to its position in the global V_tang vector.
+            %
+            % Requires: pattern_initialized == true, elem_data_set == true.
+            %--------------------------------------------------------------------------
+            fprintf('Building element scatter map ... ');
+            t0 = tic;
+
+            n_local_dof = obj.dim * obj.elem_n_p;
+            n_dof_total = size(obj.B, 2);          % dim * n_n
+
+            % Global-to-free DOF mapping  (0 = Dirichlet)
+            free_idx = zeros(n_dof_total, 1, 'int64');
+            free_idx(obj.Q_flat_stored) = int64(1:obj.n_Q)';
+
+            % Element-to-free-DOF map  (n_local_dof x n_e)
+            elem_free = zeros(n_local_dof, obj.elem_n_e, 'int64');
+            for i = 1:obj.elem_n_p
+                for d = 1:obj.dim
+                    l = (i - 1) * obj.dim + d;
+                    elem_free(l, :) = free_idx((obj.elem_ELEM(i, :) - 1) * obj.dim + d);
+                end
+            end
+
+            % Position lookup sparse matrix: P(i,j) = index k where
+            % ref_I(k)==i && ref_J(k)==j
+            nnz_pat = numel(obj.ref_I);
+            P_lookup = sparse(double(obj.ref_I), double(obj.ref_J), ...
+                (1:nnz_pat)', obj.n_Q, obj.n_Q);
+
+            % Build scatter map per element
+            smap = zeros(n_local_dof * n_local_dof, obj.elem_n_e, 'int64');
+            for e = 1:obj.elem_n_e
+                dofs = elem_free(:, e);
+                mask = dofs > 0;
+                if ~any(mask), continue; end
+
+                active = double(dofs(mask));
+                sub_P = P_lookup(active, active);   % small sparse submatrix
+
+                full_local = zeros(n_local_dof, n_local_dof);
+                idx_active = find(mask);
+                full_local(idx_active, idx_active) = full(sub_P);
+                smap(:, e) = int64(full_local(:));
+            end
+
+            obj.elem_scatter_map = smap;
+            obj.elem_assembly_ready = true;
+            fprintf('done  (%.1f s, n_local_dof=%d, map_size=%.0f MB)\n', ...
+                toc(t0), n_local_dof, ...
+                numel(smap) * 8 / 1e6);
+        end
+
+        function V_tang = build_K_tangent_QQ_vals_element(obj)
+            %--------------------------------------------------------------------------
+            % build_K_tangent_QQ_vals_element  Element-level tangent assembly.
+            %
+            % Dispatches to C mex if available, otherwise uses pure Octave.
+            %--------------------------------------------------------------------------
+            nnz_out = numel(obj.ref_I);
+            if obj.elem_use_mex
+                V_tang = assemble_K_tangent_vals( ...
+                    obj.elem_DPhi1, obj.elem_DPhi2, obj.elem_DPhi3, ...
+                    obj.DS, obj.WEIGHT, obj.elem_scatter_map, ...
+                    int32(obj.elem_n_q), int32(nnz_out));
+            else
+                V_tang = obj.build_K_tangent_QQ_vals_octave();
+            end
+        end
+
+        function V_tang = build_K_tangent_QQ_vals_octave(obj)
+            %--------------------------------------------------------------------------
+            % build_K_tangent_QQ_vals_octave  Pure-Octave element assembly (slow).
+            % Useful for validation only.
+            %--------------------------------------------------------------------------
+            nnz_out     = numel(obj.ref_I);
+            n_local_dof = obj.dim * obj.elem_n_p;
+            ns          = obj.n_strain;
+            nq          = obj.elem_n_q;
+            ne          = obj.elem_n_e;
+            np          = obj.elem_n_p;
+            V_tang      = zeros(nnz_out, 1);
+
+            for e = 1:ne
+                Ke = zeros(n_local_dof, n_local_dof);
+                g_base = (e - 1) * nq;
+                for q = 1:nq
+                    g = g_base + q;
+                    w = obj.WEIGHT(g);
+                    D_eq = w * reshape(obj.DS(:, g), ns, ns);
+
+                    % Build local B_eq (ns x n_local_dof)
+                    B_eq = zeros(ns, n_local_dof);
+                    for i = 1:np
+                        dN1 = obj.elem_DPhi1(i, g);
+                        dN2 = obj.elem_DPhi2(i, g);
+                        dN3 = obj.elem_DPhi3(i, g);
+                        c = (i - 1) * 3;
+                        B_eq(1, c+1) = dN1;
+                        B_eq(2, c+2) = dN2;
+                        B_eq(3, c+3) = dN3;
+                        B_eq(4, c+1) = dN2;
+                        B_eq(4, c+2) = dN1;
+                        B_eq(5, c+2) = dN3;
+                        B_eq(5, c+3) = dN2;
+                        B_eq(6, c+1) = dN3;
+                        B_eq(6, c+3) = dN1;
+                    end
+                    Ke = Ke + B_eq' * D_eq * B_eq;
+                end
+
+                % Scatter into V_tang
+                smap_e = obj.elem_scatter_map(:, e);
+                for k = 1:numel(smap_e)
+                    idx = smap_e(k);
+                    if idx > 0
+                        V_tang(idx) = V_tang(idx) + Ke(k);
+                    end
+                end
+            end
         end
     end
 end

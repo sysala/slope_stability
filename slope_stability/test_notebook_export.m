@@ -60,7 +60,7 @@ materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
     ASSEMBLY.heterogenous_materials(material, saturation, n_q, materials);
 
-[K_elast, B, WEIGHT] = ASSEMBLY.elastic_stiffness_matrix_3D( ...
+[K_elast, B, WEIGHT, DPhi1_out, DPhi2_out, DPhi3_out] = ASSEMBLY.elastic_stiffness_matrix_3D( ...
     elem, coord, shear, bulk, DHatP1, DHatP2, DHatP3, WF);
 
 f_V_int = [zeros(1, n_int); -gamma; zeros(1, n_int)];
@@ -97,6 +97,9 @@ linear_system_solver = LINEAR_SOLVERS.set_linear_solver(agmg_folder, solver_type
 n_strain = 6;
 constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE( ...
     B, c0, phi, psi, Davis_type, shear, bulk, lame, WEIGHT, n_strain, n_int, 3);
+
+% Provide element geometry for element-level tangent assembly.
+constitutive_matrix_builder.set_element_data(elem, DPhi1_out, DPhi2_out, DPhi3_out);
 
 %% 6) Run SSR Continuation
 fprintf('\n Indirect continuation method\n');
