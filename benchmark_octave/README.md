@@ -79,11 +79,11 @@ Also tested alternate BLAS target:
 - timestamp: `2026-02-28 14:03` (from `octave_medium.json` / `matlab_medium.json`)
 - profile: `medium`, repeats `3`, warmup `1`
 
-| Kernel | Octave (s) | MATLAB (s) | Oct/MAT |
-|---|---:|---:|---:|
-| `B' * D_p * B` | 0.664624 | 0.054647 | 12.162 |
-| `A * x (sparse)` | 0.006833 | 0.001925 | 3.550 |
-| `X' * X (dense Gram)` | 0.007076 | 0.006003 | 1.179 |
+| Kernel                | Octave (s) | MATLAB (s) | Oct/MAT |
+| --------------------- | ---------: | ---------: | ------: |
+| `B' * D_p * B`        |   0.664624 |   0.054647 |  12.162 |
+| `A * x (sparse)`      |   0.006833 |   0.001925 |   3.550 |
+| `X' * X (dense Gram)` |   0.007076 |   0.006003 |   1.179 |
 
 ### Rebuilt Octave (local OpenBLAS ZEN, tuned `OMP_NUM_THREADS=16`)
 
@@ -91,11 +91,11 @@ Also tested alternate BLAS target:
 - MATLAB comparison file: `benchmark_octave/results/matlab_medium_retest3.json`
 - timestamps: `2026-02-28 14:34` (Octave), `2026-02-28 14:35` (MATLAB)
 
-| Kernel | Octave (s) | MATLAB (s) | Oct/MAT |
-|---|---:|---:|---:|
-| `B' * D_p * B` | 0.701838 | 0.065579 | 10.702 |
-| `A * x (sparse)` | 0.007012 | 0.002883 | 2.432 |
-| `X' * X (dense Gram)` | 0.004170 | 0.008515 | 0.490 |
+| Kernel                | Octave (s) | MATLAB (s) | Oct/MAT |
+| --------------------- | ---------: | ---------: | ------: |
+| `B' * D_p * B`        |   0.701838 |   0.065579 |  10.702 |
+| `A * x (sparse)`      |   0.007012 |   0.002883 |   2.432 |
+| `X' * X (dense Gram)` |   0.004170 |   0.008515 |   0.490 |
 
 ### Change vs baseline (Octave only)
 
@@ -154,20 +154,20 @@ C = A_rsb * B_rsb;
 
 Comparison to MATLAB using `sparsersb` backend (`medium`, repeats `3`, warmup `1`, `OMP_NUM_THREADS=16`):
 
-| Kernel | `sparsersb` (s) | MATLAB (s) | RSB/MAT |
-|---|---:|---:|---:|
-| `B' * D_p * B` | 0.367581 | 0.065579 | 5.605 |
-| `A * x (sparse)` | 0.001019 | 0.002883 | 0.353 |
-| `X' * X (dense Gram)` | 0.004201 | 0.008515 | 0.493 |
+| Kernel                | `sparsersb` (s) | MATLAB (s) | RSB/MAT |
+| --------------------- | --------------: | ---------: | ------: |
+| `B' * D_p * B`        |        0.367581 |   0.065579 |   5.605 |
+| `A * x (sparse)`      |        0.001019 |   0.002883 |   0.353 |
+| `X' * X (dense Gram)` |        0.004201 |   0.008515 |   0.493 |
 
 Result files: `benchmark_octave/results/octave_medium_sparsersb_t16.json` vs `benchmark_octave/results/matlab_medium_retest3.json`.
 
 Observed timings on this machine (`OMP_NUM_THREADS=16`):
 
-| Kernel | Octave sparse (s) | `sparsersb` (s) | RSB/Octave | Relative error |
-|---|---:|---:|---:|---:|
-| `A*x` SpMV (`n=100000`, `nnz=1,000,000`) | 0.002619 | 0.000774 | 0.296 | 4.964e-17 |
-| `A*B` SpMM (`n=10000`, `nnz(A)=nnz(B)=60000`) | 0.009239 | 0.018005 | 1.949 | 0.000e+00 |
+| Kernel                                        | Octave sparse (s) | `sparsersb` (s) | RSB/Octave | Relative error |
+| --------------------------------------------- | ----------------: | --------------: | ---------: | -------------: |
+| `A*x` SpMV (`n=100000`, `nnz=1,000,000`)      |          0.002619 |        0.000774 |      0.296 |      4.964e-17 |
+| `A*B` SpMM (`n=10000`, `nnz(A)=nnz(B)=60000`) |          0.009239 |        0.018005 |      1.949 |      0.000e+00 |
 
 Takeaway: on this setup, `sparsersb` improves large SpMV, while SpMM was slower in the tested random case.
 
@@ -190,16 +190,16 @@ Result files:
 
 Requested comparison (MATLAB vs Octave, explicit path):
 
-| Kernel | Octave (s) | MATLAB (s) | Oct/MAT |
-|---|---:|---:|---:|
-| `build K + 30*(K*x)` | 1.589434 | 0.173568 | 9.157 |
-| `30*(K*x), K prebuilt` | 0.138120 | 0.036354 | 3.799 |
+| Kernel                 | Octave (s) | MATLAB (s) | Oct/MAT |
+| ---------------------- | ---------: | ---------: | ------: |
+| `build K + 30*(K*x)`   |   1.589434 |   0.173568 |   9.157 |
+| `30*(K*x), K prebuilt` |   0.138120 |   0.036354 |   3.799 |
 
 Requested Octave mat-free run:
 
-| Kernel | Octave (s) |
-|---|---:|
-| `30*(B'*(D_p*(B*x)))` | 0.539164 |
+| Kernel                | Octave (s) |
+| --------------------- | ---------: |
+| `30*(B'*(D_p*(B*x)))` |   0.539164 |
 
 Octave mat-free interpretation on this test:
 
@@ -220,15 +220,15 @@ OMP_NUM_THREADS=16 .octave_all/install/octave-11.1.0-zen/bin/octave-cli --quiet 
 
 Matrix (`medium` profile): `400000 x 400000`, `nnz = 4398920`
 
-| Kernel | Octave (s) |
-|---|---:|
-| `30*(A*x), sparse prebuilt` | 0.201952 |
-| `build sparse + 30*(A*x)` | 0.228747 |
-| `30*(A_rsb*x), rsb prebuilt from sparse` | 0.024118 |
-| `build rsb from sparse + 30*(A_rsb*x)` | 0.073695 |
-| `build sparse + build rsb + 30*(A_rsb*x)` | 0.092564 |
-| `30*(A_rsb*x), rsb prebuilt from coo` | 0.020121 |
-| `build rsb from coo + 30*(A_rsb*x)` | 0.084470 |
+| Kernel                                    | Octave (s) |
+| ----------------------------------------- | ---------: |
+| `30*(A*x), sparse prebuilt`               |   0.201952 |
+| `build sparse + 30*(A*x)`                 |   0.228747 |
+| `30*(A_rsb*x), rsb prebuilt from sparse`  |   0.024118 |
+| `build rsb from sparse + 30*(A_rsb*x)`    |   0.073695 |
+| `build sparse + build rsb + 30*(A_rsb*x)` |   0.092564 |
+| `30*(A_rsb*x), rsb prebuilt from coo`     |   0.020121 |
+| `build rsb from coo + 30*(A_rsb*x)`       |   0.084470 |
 
 Fastest paths on this setup:
 
@@ -258,11 +258,11 @@ Result files:
 - `benchmark_octave/results/octave_btDb_prebuild_medium_native.json`
 - `benchmark_octave/results/octave_btDb_prebuild_medium_sparsersb.json`
 
-| Engine / backend | Naive `B'*diag(d)*B` (s) | Prebuilt+`accumarray` (s) | Naive/Prebuilt |
-|---|---:|---:|---:|
-| MATLAB / native sparse | 0.061923 | 0.117327 | 0.528 |
-| Octave / native sparse | 0.476603 | 0.120283 | 3.962 |
-| Octave / `sparsersb` | 0.428576 | 0.153819 | 2.786 |
+| Engine / backend       | Naive `B'*diag(d)*B` (s) | Prebuilt+`accumarray` (s) | Naive/Prebuilt |
+| ---------------------- | -----------------------: | ------------------------: | -------------: |
+| MATLAB / native sparse |                 0.061923 |                  0.117327 |          0.528 |
+| Octave / native sparse |                 0.476603 |                  0.120283 |          3.962 |
+| Octave / `sparsersb`   |                 0.428576 |                  0.153819 |          2.786 |
 
 Precompute one-time cost (pattern build from `B`):
 
@@ -304,22 +304,22 @@ Result file:
 
 Median timing breakdown (per repeat = 12 `d` vectors):
 
-| Line | Median (s) | Share (%) |
-|---|---:|---:|
-| `vals_pair = P.Wraw .* d(P.Rraw)` | 0.030048 | 19.16 |
-| `vals_u = accumarray(P.g, vals_pair, [numel(P.Iu), 1])` | 0.013838 | 8.82 |
-| `vals_full = [vals_u; vals_u(P.off)]` | 0.005756 | 3.67 |
-| `A = sparsersb(P.Ifull, P.Jfull, vals_full, P.n, P.n)` | 0.107183 | 68.35 |
-| **TOTAL** | **0.156825** | **100.00** |
+| Line                                                    |   Median (s) |  Share (%) |
+| ------------------------------------------------------- | -----------: | ---------: |
+| `vals_pair = P.Wraw .* d(P.Rraw)`                       |     0.030048 |      19.16 |
+| `vals_u = accumarray(P.g, vals_pair, [numel(P.Iu), 1])` |     0.013838 |       8.82 |
+| `vals_full = [vals_u; vals_u(P.off)]`                   |     0.005756 |       3.67 |
+| `A = sparsersb(P.Ifull, P.Jfull, vals_full, P.n, P.n)`  |     0.107183 |      68.35 |
+| **TOTAL**                                               | **0.156825** | **100.00** |
 
 Median per single `d`:
 
-| Line | Median per `d` (s) |
-|---|---:|
-| `vals_pair = P.Wraw .* d(P.Rraw)` | 0.002504 |
-| `vals_u = accumarray(P.g, vals_pair, [numel(P.Iu), 1])` | 0.001153 |
-| `vals_full = [vals_u; vals_u(P.off)]` | 0.000480 |
-| `A = sparsersb(P.Ifull, P.Jfull, vals_full, P.n, P.n)` | 0.008932 |
+| Line                                                    | Median per `d` (s) |
+| ------------------------------------------------------- | -----------------: |
+| `vals_pair = P.Wraw .* d(P.Rraw)`                       |           0.002504 |
+| `vals_u = accumarray(P.g, vals_pair, [numel(P.Iu), 1])` |           0.001153 |
+| `vals_full = [vals_u; vals_u(P.off)]`                   |           0.000480 |
+| `A = sparsersb(P.Ifull, P.Jfull, vals_full, P.n, P.n)`  |           0.008932 |
 
 ### Symmetric Constructor Hint Comparison (OMP16)
 
@@ -337,26 +337,26 @@ Run configuration:
 
 Median timing breakdown (per repeat = 12 `d` vectors):
 
-| Line | Median (s) | Share (%) |
-|---|---:|---:|
-| `vals_pair = P.Wraw .* d(P.Rraw)` | 0.028647 | 36.65 |
-| `vals_u = accumarray(P.g, vals_pair, [numel(P.Iu), 1])` | 0.013183 | 16.87 |
-| `A = sparsersb(P.Iu, P.Ju, vals_u, ..., "unique", "sym")` | 0.036326 | 46.48 |
-| **TOTAL** | **0.078156** | **100.00** |
+| Line                                                      |   Median (s) |  Share (%) |
+| --------------------------------------------------------- | -----------: | ---------: |
+| `vals_pair = P.Wraw .* d(P.Rraw)`                         |     0.028647 |      36.65 |
+| `vals_u = accumarray(P.g, vals_pair, [numel(P.Iu), 1])`   |     0.013183 |      16.87 |
+| `A = sparsersb(P.Iu, P.Ju, vals_u, ..., "unique", "sym")` |     0.036326 |      46.48 |
+| **TOTAL**                                                 | **0.078156** | **100.00** |
 
 Before vs now (`OMP_NUM_THREADS=16`, median):
 
-| Variant | Total for 12 assemblies (s) | Per assembly (s) | Speedup vs full |
-|---|---:|---:|---:|
-| Full COO mirror (`Ifull/Jfull/vals_full`) | 0.156825 | 0.013069 | 1.000x |
-| Upper-tri + `"unique","sym"` | 0.078156 | 0.006513 | 2.006x |
+| Variant                                   | Total for 12 assemblies (s) | Per assembly (s) | Speedup vs full |
+| ----------------------------------------- | --------------------------: | ---------------: | --------------: |
+| Full COO mirror (`Ifull/Jfull/vals_full`) |                    0.156825 |         0.013069 |          1.000x |
+| Upper-tri + `"unique","sym"`              |                    0.078156 |         0.006513 |          2.006x |
 
 Constructor-only comparison:
 
-| Constructor line | Median for 12 assemblies (s) | Per assembly (s) | Speedup |
-|---|---:|---:|---:|
-| `sparsersb(P.Ifull, P.Jfull, vals_full, ...)` | 0.107183 | 0.008932 | 1.000x |
-| `sparsersb(P.Iu, P.Ju, vals_u, ..., "unique", "sym")` | 0.036326 | 0.003027 | 2.951x |
+| Constructor line                                      | Median for 12 assemblies (s) | Per assembly (s) | Speedup |
+| ----------------------------------------------------- | ---------------------------: | ---------------: | ------: |
+| `sparsersb(P.Ifull, P.Jfull, vals_full, ...)`         |                     0.107183 |         0.008932 |  1.000x |
+| `sparsersb(P.Iu, P.Ju, vals_u, ..., "unique", "sym")` |                     0.036326 |         0.003027 |  2.951x |
 
 Sanity check (same generated `B,d`, random `x`):
 

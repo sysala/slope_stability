@@ -169,14 +169,14 @@ Validated by running:
 
 Key results (`THREADS=16`):
 
-| Benchmark | Result |
-|---|---:|
-| `BtDB` prebuilt line timing (`full`) total / 12 assemblies | `0.158803 s` |
+| Benchmark                                                        |       Result |
+| ---------------------------------------------------------------- | -----------: |
+| `BtDB` prebuilt line timing (`full`) total / 12 assemblies       | `0.158803 s` |
 | `BtDB` prebuilt line timing (`sym_unique`) total / 12 assemblies | `0.088379 s` |
-| `sym_unique` speedup vs `full` | `1.797x` |
-| `B' * D_p * B` (`sparsersb` backend suite) | `0.379837 s` |
-| `A * x` sparse | `0.000968 s` |
-| `X' * X` dense Gram | `0.004177 s` |
+| `sym_unique` speedup vs `full`                                   |     `1.797x` |
+| `B' * D_p * B` (`sparsersb` backend suite)                       | `0.379837 s` |
+| `A * x` sparse                                                   | `0.000968 s` |
+| `X' * X` dense Gram                                              | `0.004177 s` |
 
 Verification status: `PASSED`.
 
