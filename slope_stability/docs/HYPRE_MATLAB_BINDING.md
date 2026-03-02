@@ -7,7 +7,7 @@ This document describes the MATLAB API for the persistent HYPRE BoomerAMG bindin
 One-call setup from repository root:
 
 ```bash
-./setup_hypre_mex.sh
+setup/setup_hypre_mex.sh
 ```
 
 This pulls/updates HYPRE sources, builds an OpenMP HYPRE install, and builds the MATLAB MEX binding.

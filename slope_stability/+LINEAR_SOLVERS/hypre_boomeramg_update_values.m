@@ -12,10 +12,10 @@ if nargin < 2
     error('Usage: hypre_boomeramg_update_values(V, instance_id)');
 end
 
-if exist('hypre_boomeramg_mex', 'file') ~= 3
+if ~LINEAR_SOLVERS.is_hypre_mex_available()
     error(['hypre_boomeramg_mex is not built. Run ', ...
         'LINEAR_SOLVERS.build_hypre_boomeramg_mex from slope_stability first.']);
 end
 
-setup_time = hypre_boomeramg_mex('update_values', V(:), instance_id);
+setup_time = LINEAR_SOLVERS.hypre_boomeramg_mex('update_values', V(:), instance_id);
 end

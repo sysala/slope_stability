@@ -27,12 +27,13 @@ Environment overrides:
 EOF
 }
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "${SCRIPT_DIR}/common.sh"
+
 HYPRE_GIT_URL="${HYPRE_GIT_URL:-https://github.com/hypre-space/hypre.git}"
 HYPRE_REF="master"
-HYPRE_SRC_DIR="${HYPRE_SRC_DIR:-$ROOT_DIR/third_party/hypre}"
-HYPRE_BUILD_DIR="${HYPRE_BUILD_DIR:-$ROOT_DIR/third_party/hypre-build-openmp}"
-HYPRE_INSTALL_DIR="${HYPRE_INSTALL_DIR:-$ROOT_DIR/third_party/hypre-openmp}"
+# HYPRE_SRC_DIR, HYPRE_BUILD_DIR, HYPRE_INSTALL_DIR come from common.sh
 MATLAB_BIN="${MATLAB_BIN:-matlab}"
 JOBS="${JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}"
 DO_PULL=1
@@ -72,6 +73,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+ensure_dirs
 echo "[1/3] Preparing HYPRE source"
 if [[ ! -d "$HYPRE_SRC_DIR/.git" ]]; then
   mkdir -p "$(dirname "$HYPRE_SRC_DIR")"
@@ -93,6 +95,7 @@ echo "[2/3] Configuring and building HYPRE"
 cmake -S "$HYPRE_SRC_DIR/src" -B "$HYPRE_BUILD_DIR" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="$HYPRE_INSTALL_DIR" \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
   -DHYPRE_ENABLE_MPI=OFF \
   -DHYPRE_ENABLE_OPENMP=ON \
   -DHYPRE_BUILD_EXAMPLES=OFF \
@@ -103,7 +106,7 @@ cmake --install "$HYPRE_BUILD_DIR"
 
 if [[ $DO_MEX -eq 1 ]]; then
   echo "[3/3] Building MATLAB MEX binding"
-  "$MATLAB_BIN" -batch "cd('$ROOT_DIR/slope_stability'); LINEAR_SOLVERS.build_hypre_boomeramg_mex('$HYPRE_INSTALL_DIR');"
+  "$MATLAB_BIN" -batch "cd('${ROOT_DIR}/slope_stability'); LINEAR_SOLVERS.build_hypre_boomeramg_mex('$HYPRE_INSTALL_DIR');"
 else
   echo "[3/3] Skipped MATLAB MEX build (--skip-mex)"
 fi

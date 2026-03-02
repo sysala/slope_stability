@@ -2,6 +2,8 @@ convert_eol.fish
 slope_stability/agmg
 poznamky_MB.docx
 poznamky.docx
+poznamky_*.docx
+~$*.docx
 *.asv
 *.fig
 *.pdf
@@ -9,12 +11,17 @@ poznamky.docx
 *.pos
 *.mat
 
-# Local C/HYPRE build artifacts
-bin/
-third_party/hypre/
-third_party/hypre-build-openmp/
-third_party/hypre-openmp/
+# Built MEX binaries (Octave .mex and MATLAB .mexa64)
+slope_stability/+LINEAR_SOLVERS/hypre_boomeramg_mex.mex
+slope_stability/+LINEAR_SOLVERS/hypre_boomeramg_mex.mexa64
+slope_stability/+CONSTITUTIVE_PROBLEM/constitutive_problem_3D_S_mex.mex
+slope_stability/+CONSTITUTIVE_PROBLEM/constitutive_problem_3D_SDS_mex.mex
+slope_stability/+ASSEMBLY/assemble_K_tangent_vals.mex
+# Legacy location (MATLAB)
 slope_stability/hypre_boomeramg_mex.mexa64
+
+# Local build artifacts
+bin/
 tmp/
 octave-workspace
 benchmark_octave/results/
@@ -23,3 +30,6 @@ benchmark_octave/build/
 .octave_all/
 .venv/
 benchmark_octave/benchmark_octave/
+
+# Generated activation script
+setup/activate_optimized_octave.sh

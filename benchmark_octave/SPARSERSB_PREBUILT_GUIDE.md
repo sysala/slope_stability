@@ -41,7 +41,7 @@ OMP_NUM_THREADS=16 .octave_all/bin/octave-rsb --quiet
 To activate the local optimized stack in your current shell:
 
 ```bash
-source ./activate_optimized_octave.sh
+source setup/activate_optimized_octave.sh
 ```
 
 ## 2. Problem setup for repeated `B' * diag(d) * B`

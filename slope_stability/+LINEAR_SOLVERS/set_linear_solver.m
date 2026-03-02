@@ -68,7 +68,7 @@ end
 
 function [preconditioner_builder, prec_init, prec_update, prec_apply] = local_build_boomer_builder(Q, coord, opts_in)
 
-if exist('hypre_boomeramg_mex', 'file') ~= 3
+if ~LINEAR_SOLVERS.is_hypre_mex_available()
     this_dir = fileparts(mfilename('fullpath'));
     if isfile(fullfile(this_dir, 'build_hypre_boomeramg_mex.m'))
         LINEAR_SOLVERS.build_hypre_boomeramg_mex();

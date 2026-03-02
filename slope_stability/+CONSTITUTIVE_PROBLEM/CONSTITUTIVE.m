@@ -178,10 +178,12 @@ classdef CONSTITUTIVE < handle
             obj.elem_scatter_map = [];
             obj.elem_data_set = false;
             obj.elem_assembly_ready = false;
-            obj.elem_use_mex = (exist('assemble_K_tangent_vals', 'file') == 3);
+            this_pkg_dir = fileparts(mfilename('fullpath'));
+            root_dir = fileparts(this_pkg_dir);
+            obj.elem_use_mex = (exist(fullfile(root_dir, '+ASSEMBLY', 'assemble_K_tangent_vals.mex'), 'file') == 3);
             obj.use_3D_mex = (dim == 3) && ...
-                (exist('constitutive_problem_3D_S_mex', 'file') == 3) && ...
-                (exist('constitutive_problem_3D_SDS_mex', 'file') == 3);
+                (exist(fullfile(this_pkg_dir, 'constitutive_problem_3D_S_mex.mex'), 'file') == 3) && ...
+                (exist(fullfile(this_pkg_dir, 'constitutive_problem_3D_SDS_mex.mex'), 'file') == 3);
             obj.last_build_F_DS_timing = struct();
         end
 
@@ -228,7 +230,7 @@ classdef CONSTITUTIVE < handle
             E = obj.B * U(:);  % Strain at integration points.
             E = reshape(E, obj.n_strain, []);
             if obj.use_3D_mex
-                obj.S = constitutive_problem_3D_S_mex(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
+                obj.S = CONSTITUTIVE_PROBLEM.constitutive_problem_3D_S_mex(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
             elseif obj.dim == 2
                 [obj.S] = CONSTITUTIVE_PROBLEM.constitutive_problem_2D(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
             elseif obj.dim == 3
@@ -259,7 +261,7 @@ classdef CONSTITUTIVE < handle
             E = obj.B * U(:);  % Strain at integration points.
             E = reshape(E, obj.n_strain, []);
             if obj.use_3D_mex
-                [obj.S, obj.DS] = constitutive_problem_3D_SDS_mex(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
+                [obj.S, obj.DS] = CONSTITUTIVE_PROBLEM.constitutive_problem_3D_SDS_mex(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
             elseif obj.dim == 2
                 [obj.S, obj.DS] = CONSTITUTIVE_PROBLEM.constitutive_problem_2D(E, obj.c_bar, obj.sin_phi, obj.shear, obj.bulk, obj.lame);
             elseif obj.dim == 3
@@ -634,7 +636,9 @@ classdef CONSTITUTIVE < handle
             obj.elem_n_e   = size(ELEM, 2);
             obj.elem_n_q   = obj.n_int / obj.elem_n_e;
             obj.elem_data_set = true;
-            obj.elem_use_mex = (exist('assemble_K_tangent_vals', 'file') == 3);
+            this_pkg_dir = fileparts(mfilename('fullpath'));
+            root_dir = fileparts(this_pkg_dir);
+            obj.elem_use_mex = (exist(fullfile(root_dir, '+ASSEMBLY', 'assemble_K_tangent_vals.mex'), 'file') == 3);
             fprintf('Element data set: n_p=%d, n_e=%d, n_q=%d, mex=%d\n', ...
                 obj.elem_n_p, obj.elem_n_e, obj.elem_n_q, obj.elem_use_mex);
 
@@ -707,7 +711,7 @@ classdef CONSTITUTIVE < handle
             %--------------------------------------------------------------------------
             nnz_out = numel(obj.ref_I);
             if obj.elem_use_mex
-                V_tang = assemble_K_tangent_vals( ...
+                V_tang = ASSEMBLY.assemble_K_tangent_vals( ...
                     obj.elem_DPhi1, obj.elem_DPhi2, obj.elem_DPhi3, ...
                     obj.DS, obj.WEIGHT, obj.elem_scatter_map, ...
                     int32(obj.elem_n_q), int32(nnz_out));

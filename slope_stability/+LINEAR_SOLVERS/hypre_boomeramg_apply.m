@@ -13,11 +13,11 @@ function y = hypre_boomeramg_apply(r, instance_id)
 if nargin < 2
     error('Usage: hypre_boomeramg_apply(r, instance_id)');
 end
-if exist('hypre_boomeramg_mex', 'file') ~= 3
+if ~LINEAR_SOLVERS.is_hypre_mex_available()
     error(['hypre_boomeramg_mex is not built. Run ', ...
-           'LINEAR_SOLVERS.build_hypre_boomeramg_mex from slope_stability first.']);
+        'LINEAR_SOLVERS.build_hypre_boomeramg_mex from slope_stability first.']);
 end
 
-y = hypre_boomeramg_mex('apply', r, instance_id);
+y = LINEAR_SOLVERS.hypre_boomeramg_mex('apply', r, instance_id);
 
 end

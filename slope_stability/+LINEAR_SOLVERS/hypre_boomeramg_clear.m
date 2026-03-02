@@ -4,14 +4,14 @@ function hypre_boomeramg_clear(instance_id)
 %   LINEAR_SOLVERS.hypre_boomeramg_clear(instance_id)
 %   LINEAR_SOLVERS.hypre_boomeramg_clear()              % clear all
 
-if exist('hypre_boomeramg_mex', 'file') ~= 3
+if ~LINEAR_SOLVERS.is_hypre_mex_available()
     return;
 end
 
 if nargin < 1
-    hypre_boomeramg_mex('clear');
+    LINEAR_SOLVERS.hypre_boomeramg_mex('clear');
 else
-    hypre_boomeramg_mex('clear', instance_id);
+    LINEAR_SOLVERS.hypre_boomeramg_mex('clear', instance_id);
 end
 
 end

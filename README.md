@@ -1,25 +1,41 @@
 # Slope Stability Using LL and SSR Methods
 
-This repository contains MATLAB scripts for analyzing **slope stability problems** in 2D and 3D using the **Limit Load (LL)** and **Shear Strength Reduction (SSR)** methods. The code supports various configurations of **finite elements**, **material models**, **continuation methods**, and **linear solvers**.
+This repository contains MATLAB/Octave scripts for analyzing **slope stability problems** in 2D and 3D using the **Limit Load (LL)** and **Shear Strength Reduction (SSR)** methods. The code supports various configurations of **finite elements**, **material models**, **continuation methods**, and **linear solvers**.
 
 ---
 
-## 📁 Repository Structure (folder 'slope_stability')
+## 📁 Repository Structure
 
-- **`slope_stability_*.m`: Main driver scripts for slope simulations in different configurations.**
-- `SIOPT_*.m`: Scripts for experiments presented in the SIOPT paper. 
-- **`agmg/`: Expected to contain [AGMG](https://agmg.eu/) library (see below).**
-- `+ASSEMBLY`: Assembly of stiffness matrices and force vectors.
-- `+CONSTITUTIVE_PROBLEM`: Material model and yield criteria.
-- `+CONTINUATION`: Implementation of continuation strategies.
-- `+LINEAR_SOLVERS`: Preconditioners and iterative/direct linear solvers.
-- `+MESH`: Mesh generators (2D) and mesh loaders (3D).
-- `+NEWTON`: Newton solvers for nonlinear systems.
-- `+VIZ`: Visualization of strains, stresses, displacements, etc.
-- `docs/`: Additional MATLAB binding documentation.
-- `mex/`: C++ sources for MATLAB MEX bindings.
-- `scripts/`: Auxiliary non-entry MATLAB scripts.
-- `meshes/`: Contains prepared 3D meshes in HDF5 format.
+```
+README.md                   ← This file
+LICENSE
+bootstrap_all.sh            ← Single entry-point: builds everything
+setup/                      ← Build & environment scripts
+  common.sh                   Shared variables and helpers
+  build_octave_stack.sh       Builds Octave + OpenBLAS + librsb + sparsersb
+  setup_hypre_mex.sh          Clones/builds HYPRE (OpenMP, no MPI)
+  setup_jupyter_octave_venv.sh  Sets up Jupyter + Octave kernel
+  clean_local_builds.sh       Removes local build artifacts
+  verify_stack.sh             Runs verification benchmarks
+  activate_optimized_octave.sh  (Generated) Source to activate the environment
+slope_stability/            ← Main MATLAB/Octave code
+  slope_stability_*.m         Demo/driver scripts (2D/3D, LL/SSR)
+  SIOPT_*.m                   Scripts for SIOPT paper experiments
+  *.ipynb                     Jupyter notebook demos
+  +ASSEMBLY/                  Stiffness matrix assembly (+ mex/ sources)
+  +CONSTITUTIVE_PROBLEM/      Material model & yield criteria (+ mex/ sources)
+  +CONTINUATION/              Continuation strategies
+  +LINEAR_SOLVERS/            Iterative solvers & preconditioners (+ mex/ sources)
+  +MESH/                      Mesh generation (2D) and loading (3D)
+  +NEWTON/                    Newton solvers for nonlinear systems
+  +SEEPAGE/                   Seepage/flow subproblem
+  +VIZ/                       Visualization
+  agmg/                       (User-provided) AGMG library
+  docs/                       Documentation (HYPRE binding, element assembly, etc.)
+  meshes/                     Prepared 3D meshes in HDF5 format
+  scripts/                    Auxiliary MATLAB scripts
+benchmark_octave/           ← Performance benchmarks
+```
 
 
 ---
@@ -90,10 +106,10 @@ You can select different levels of mesh adaptivity by commenting/uncommenting th
 
 HYPRE BoomerAMG is available in the same slope-stability workflow as AGMG through `LINEAR_SOLVERS.set_linear_solver`.
 
-Build once (downloads/builds HYPRE and builds MATLAB MEX binding):
+Build once (included in `bootstrap_all.sh`, or standalone):
 
 ```bash
-./setup_hypre_mex.sh
+bash setup/setup_hypre_mex.sh
 ```
 
 Then choose BoomerAMG in a slope-stability script:
@@ -124,7 +140,101 @@ Notes:
 
 
 ---
-## 📌 Features
+## � GNU Octave Support (Local Optimized Build)
+
+The code runs on **GNU Octave** (tested with 11.1) in addition to MATLAB. A fully automated build pipeline compiles an optimized local Octave stack with all numerical dependencies.
+
+### What gets built
+
+| Component                  | Purpose                                               |
+| -------------------------- | ----------------------------------------------------- |
+| **OpenBLAS** (Zen-tuned)   | Fast BLAS/LAPACK for the local Octave                 |
+| **Octave 11.1**            | CLI-only build linked to local OpenBLAS               |
+| **librsb + sparsersb**     | Recursive-sparse-blocks backend for faster sparse ops |
+| **HYPRE** (OpenMP, no MPI) | BoomerAMG algebraic multigrid via MEX binding         |
+| **Constitutive MEX**       | OpenMP C kernels for 3D stress/tangent evaluation     |
+| **Assembly MEX**           | OpenMP C kernel for element-level tangent stiffness   |
+| **Jupyter kernel**         | Octave kernel in a Python venv for notebook demos     |
+
+Everything installs under `.octave_all/` and `.venv/` inside the repository — nothing is written to system directories.
+
+### Quick start
+
+```bash
+# Build the entire stack (Octave + HYPRE + MEX files + Jupyter):
+./bootstrap_all.sh
+
+# If HYPRE / MATLAB MEX is not needed:
+./bootstrap_all.sh --skip-hypre
+
+# Skip verification benchmarks:
+./bootstrap_all.sh --no-verify
+```
+
+The build takes 15–30 minutes depending on hardware (downloads ~300 MB of sources).
+
+### Activating the environment
+
+After a successful build, activate the local Octave in any terminal session:
+
+```bash
+source setup/activate_optimized_octave.sh
+```
+
+This sets `PATH`, `LD_LIBRARY_PATH`, and `OMP_NUM_THREADS` (default 16). The activation is required before running any Octave command or Jupyter notebook.
+
+### Running simulations
+
+```bash
+source setup/activate_optimized_octave.sh
+cd slope_stability
+octave-cli slope_stability_2D_homo_SSR.m        # 2D example
+octave-cli slope_stability_3D_homo_SSR.m        # 3D example
+```
+
+### Running Jupyter notebooks
+
+```bash
+source .venv/bin/activate          # activate the Jupyter venv
+jupyter lab                        # open in browser
+```
+
+Open `slope_stability/slope_stability_3D_hetero_seepage_SSR_comsol_demo.ipynb` and select the **Octave (local-rsb)** kernel.
+
+### Individual setup scripts (in `setup/`)
+
+| Script                         | Purpose                                           |
+| ------------------------------ | ------------------------------------------------- |
+| `build_octave_stack.sh`        | Builds OpenBLAS → Octave → librsb → sparsersb     |
+| `setup_hypre_mex.sh`           | Clones/builds HYPRE, optionally builds MATLAB MEX |
+| `setup_jupyter_octave_venv.sh` | Creates `.venv/` with Jupyter + Octave kernel     |
+| `clean_local_builds.sh`        | Removes all build artifacts (keeps sources)       |
+| `verify_stack.sh`              | Runs timing benchmarks to verify the build        |
+| `common.sh`                    | Shared configuration (versions, paths, helpers)   |
+
+### MEX files
+
+C/C++ MEX sources live alongside the package they belong to:
+
+| MEX source                                              | Package                | Built binary                              |
+| ------------------------------------------------------- | ---------------------- | ----------------------------------------- |
+| `+ASSEMBLY/mex/assemble_K_tangent_vals.c`               | `ASSEMBLY`             | `+ASSEMBLY/assemble_K_tangent_vals.mex`   |
+| `+CONSTITUTIVE_PROBLEM/mex/constitutive_problem_3D_*.c` | `CONSTITUTIVE_PROBLEM` | `+CONSTITUTIVE_PROBLEM/*.mex`             |
+| `+LINEAR_SOLVERS/mex/hypre_boomeramg_mex.cpp`           | `LINEAR_SOLVERS`       | `+LINEAR_SOLVERS/hypre_boomeramg_mex.mex` |
+
+The MEX binaries are built automatically by `bootstrap_all.sh`. To rebuild individually:
+
+```bash
+source setup/activate_optimized_octave.sh
+cd slope_stability
+bash ./+ASSEMBLY/mex/build_assemble_K_tangent.sh
+bash ./+CONSTITUTIVE_PROBLEM/mex/build_constitutive_3D_mex.sh
+octave-cli --eval "LINEAR_SOLVERS.build_hypre_boomeramg_mex();"
+```
+
+
+---
+## �📌 Features
 
 These codes are focused on the solution of slope stability problems in 2D and 3D by the shear strength reduction (SSR) and limit load methods. The presented solution concept build on Davis' modifications of the methods, standard finite elements and advanced continuation techniques combined with Newton-like solvers. In particular, one can choose DAVIS A, B or C approach, P1 or P2 elements and different continutation techniques. The available folders contain various 2D and 3D problems with either homogeneous or heterogeneous geometries and will be completed stepwisely. 
 

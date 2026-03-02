@@ -8,7 +8,7 @@ Benchmarks for expensive linear-algebra kernels that mirror the slope stability 
 
 For a full reproducible local build + Jupyter setup workflow, see `benchmark_octave/BUILD_AND_ENV.md`.
 For `sparsersb` usage and prebuilt `B' * diag(d) * B` assembly, see `benchmark_octave/SPARSERSB_PREBUILT_GUIDE.md`.
-Build/setup scripts are in repository root (`build_octave_stack.sh`, `setup_jupyter_octave_venv.sh`, `verify_stack.sh`, `bootstrap_all.sh`).
+Build/setup scripts are in `setup/` (`build_octave_stack.sh`, `setup_jupyter_octave_venv.sh`, `verify_stack.sh`), with `bootstrap_all.sh` in the repository root.
 
 ## Files
 
@@ -55,7 +55,7 @@ OCTAVE_OMP_NUM_THREADS=16 ./benchmark_octave/run_octave_vs_matlab.sh medium 3 1
 Activate the local optimized build in your current shell:
 
 ```bash
-source ./activate_optimized_octave.sh
+source setup/activate_optimized_octave.sh
 ```
 
 ## Build Notes (2026-02-28)

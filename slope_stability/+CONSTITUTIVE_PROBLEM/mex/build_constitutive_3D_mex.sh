@@ -3,16 +3,16 @@
 # Run from the slope_stability/ directory.
 #
 # Usage:
-#   bash mex/build_constitutive_3D_mex.sh
+#   bash +CONSTITUTIVE_PROBLEM/mex/build_constitutive_3D_mex.sh
 #
-# Produces two .mex files in the current directory:
+# Produces two .mex files in +CONSTITUTIVE_PROBLEM/:
 #   constitutive_problem_3D_S_mex.mex     (stress only)
 #   constitutive_problem_3D_SDS_mex.mex   (stress + consistent tangent)
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-OUT_DIR="$(pwd)"
+OUT_DIR="$SCRIPT_DIR/.."
 
 # Detect the right mkoctfile
 if command -v mkoctfile &>/dev/null; then

@@ -33,10 +33,10 @@ only values are recomputed at each Newton iteration.
 
 ### New files
 
-| File                              | Purpose                                                |
-| --------------------------------- | ------------------------------------------------------ |
-| `mex/assemble_K_tangent_vals.c`   | C mex — OpenMP-parallel element-level assembly kernel. |
-| `mex/build_assemble_K_tangent.sh` | One-liner build script (calls `mkoctfile --mex`).      |
+| File                                       | Purpose                                                |
+| ------------------------------------------ | ------------------------------------------------------ |
+| `+ASSEMBLY/mex/assemble_K_tangent_vals.c`  | C mex — OpenMP-parallel element-level assembly kernel. |
+| `+ASSEMBLY/mex/build_assemble_K_tangent.sh`| One-liner build script (calls `mkoctfile --mex`).      |
 
 ---
 

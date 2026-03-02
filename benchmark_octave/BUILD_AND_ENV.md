@@ -9,7 +9,7 @@ Target layout (all local to repo):
 - installs: `.octave_all/install`
 - octave wrapper: `.octave_all/bin/octave-rsb`
 - runtime env exports: `.octave_all/env.sh`
-- activation helper: `activate_optimized_octave.sh`
+- activation helper: `setup/activate_optimized_octave.sh`
 - jupyter venv: `.venv`
 
 ## 1. Prerequisites
@@ -34,14 +34,14 @@ If some optional Octave features are missing, configure will print which librari
 
 ## 2. Scripts Provided
 
-Build/setup scripts are in repository root.
+Build/setup scripts are in `setup/`.
 
-- `clean_local_builds.sh`
+- `setup/clean_local_builds.sh`
   - Removes local build/install/venv artifacts.
   - Optional:
     - `PURGE_SOURCES=1` also deletes downloaded tarballs.
     - `PURGE_RESULTS=1` also deletes benchmark JSON results.
-- `build_octave_stack.sh`
+- `setup/build_octave_stack.sh`
   - Downloads/builds:
     - OpenBLAS `0.3.31` (`TARGET=ZEN`, OpenMP, static arch)
     - Octave `11.1.0` linked to local OpenBLAS
@@ -50,24 +50,25 @@ Build/setup scripts are in repository root.
   - Writes:
     - `.octave_all/env.sh`
     - `.octave_all/bin/octave-rsb`
-    - `activate_optimized_octave.sh`
-- `setup_jupyter_octave_venv.sh`
+    - `setup/activate_optimized_octave.sh`
+- `setup/setup_jupyter_octave_venv.sh`
   - Creates local venv and installs:
     - `jupyterlab`, `notebook`, `ipykernel`, `octave_kernel`
   - Creates kernel spec:
     - name: `octave-local-rsb`
     - display: `Octave (local-rsb)`
     - uses `.octave_all/bin/octave-rsb`
-- `verify_stack.sh`
+- `setup/verify_stack.sh`
   - Functional checks (`pkg load sparsersb`)
   - Performance checks at `OMP_NUM_THREADS=16`:
     - line-by-line `B'*diag(d)*B` benchmark (`full` and `sym_unique`)
     - core benchmark suite (`run_benchmarks.m`, `sparse_backend='sparsersb'`)
-- `bootstrap_all.sh`
-  - Runs clean -> build -> venv setup -> verification end-to-end.
+- `bootstrap_all.sh` (in repo root)
+  - Runs clean -> build -> HYPRE -> MEX -> venv setup -> verification end-to-end.
   - Options:
     - `--no-clean`
     - `--no-verify`
+    - `--skip-hypre`
 
 ## 3. One-Command End-to-End Setup
 
@@ -83,16 +84,16 @@ This is the recommended path for a fresh rebuild.
 
 ```bash
 # 1) Clean old local artifacts
-./clean_local_builds.sh
+setup/clean_local_builds.sh
 
 # 2) Build OpenBLAS + Octave + librsb + sparsersb
-./build_octave_stack.sh
+setup/build_octave_stack.sh
 
 # 3) Setup local Jupyter venv and Octave kernel
-./setup_jupyter_octave_venv.sh
+setup/setup_jupyter_octave_venv.sh
 
 # 4) Verify functionality + performance envelope
-THREADS=16 ./verify_stack.sh
+THREADS=16 setup/verify_stack.sh
 ```
 
 ## 5. Runtime Environment
@@ -106,7 +107,7 @@ source .octave_all/env.sh
 or via the root activation helper:
 
 ```bash
-source ./activate_optimized_octave.sh
+source setup/activate_optimized_octave.sh
 ```
 
 Then:

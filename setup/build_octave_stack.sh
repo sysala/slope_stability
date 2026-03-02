@@ -161,9 +161,16 @@ build_librsb() {
 }
 
 build_and_install_sparsersb() {
+  local pkg_prefix="${OCTAVE_PREFIX}/share/octave/packages"
+  local pkg_archprefix="${OCTAVE_PREFIX}/lib/octave/packages"
+  local pkg_list="${OCTAVE_PREFIX}/share/octave/octave_packages"
+
   if [[ "${FORCE_REBUILD}" != "1" ]] && [[ "${FORCE_SPARSERSB_REINSTALL}" != "1" ]] && [[ -x "${OCTAVE_BIN}" ]]; then
-    if export_runtime_env && "${OCTAVE_BIN}" --quiet --eval "try, pkg load sparsersb; disp('sparsersb-present'); catch, error('missing'); end" >/dev/null 2>&1; then
-      log "Skipping sparsersb install (package already loadable)"
+    if export_runtime_env && "${OCTAVE_BIN}" --quiet --eval "\
+        pkg('local_list','${pkg_list}'); \
+        pkg('prefix','${pkg_prefix}','${pkg_archprefix}'); \
+        pkg load sparsersb; disp('sparsersb-present');" >/dev/null 2>&1; then
+      log "Skipping sparsersb install (package already loadable from local prefix)"
       return 0
     fi
   fi
@@ -175,14 +182,41 @@ build_and_install_sparsersb() {
   log "Creating patched sparsersb source archive"
   tar -czf "${SPARSERSB_PATCHED_TARBALL}" -C "${BUILD_DIR}" "sparsersb-${SPARSERSB_VERSION}"
 
-  log "Installing sparsersb into Octave package path"
+  log "Installing sparsersb into local Octave prefix (not user home)"
   export_runtime_env
   export SPARSERSB_CXX11="-std=gnu++17"
-  "${OCTAVE_BIN}" --quiet --eval "pkg install -verbose '${SPARSERSB_PATCHED_TARBALL}'; pkg load sparsersb; A = sparsersb([1;2],[1;2],[1;1],2,2); disp(full(A));"
+
+  # Set pkg prefix to keep packages inside the Octave install tree,
+  # avoiding writes to ~/.local/share/octave/ or ~/.config/octave/.
+  mkdir -p "${pkg_prefix}" "${pkg_archprefix}"
+
+  "${OCTAVE_BIN}" --quiet --eval "\
+    pkg ('prefix', '${pkg_prefix}', '${pkg_archprefix}'); \
+    pkg ('local_list', '${pkg_list}'); \
+    pkg install -verbose '${SPARSERSB_PATCHED_TARBALL}'; \
+    pkg load sparsersb; \
+    A = sparsersb([1;2],[1;2],[1;1],2,2); \
+    disp(full(A));"
 }
 
 write_runtime_wrappers() {
   mkdir -p "${OCTAVE_ALL_DIR}/bin"
+
+  # Write site-level octaverc so pkg system uses local paths (not ~/.local/)
+  local site_startup="${OCTAVE_PREFIX}/share/octave/site/m/startup"
+  mkdir -p "${site_startup}"
+  cat > "${site_startup}/octaverc" <<'OCTAVERC_EOF'
+## Site-level octaverc — redirect package paths into this Octave prefix
+## (keeps everything local to the repo, nothing written to ~/.local or ~/.config)
+_prefix = OCTAVE_HOME();
+_pkg_dir = fullfile(_prefix, 'share', 'octave', 'packages');
+_pkg_arch = fullfile(_prefix, 'lib', 'octave', 'packages');
+_pkg_list = fullfile(_prefix, 'share', 'octave', 'octave_packages');
+pkg('prefix', _pkg_dir, _pkg_arch);
+pkg('local_list', _pkg_list);
+clear _prefix _pkg_dir _pkg_arch _pkg_list;
+OCTAVERC_EOF
+  log "Wrote site octaverc: ${site_startup}/octaverc"
 
   cat > "${RUNTIME_ENV}" <<EOF
 #!/usr/bin/env bash

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="${SCRIPT_DIR}"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BENCH_DIR="${ROOT_DIR}/benchmark_octave"
 OCTAVE_ALL_DIR="${ROOT_DIR}/.octave_all"
 SRC_DIR="${OCTAVE_ALL_DIR}/src"
@@ -28,8 +28,13 @@ LIBRSB_PREFIX="${INSTALL_DIR}/librsb-${LIBRSB_VERSION}"
 OCTAVE_BIN="${OCTAVE_PREFIX}/bin/octave-cli"
 LOCAL_WRAPPER="${OCTAVE_ALL_DIR}/bin/octave-rsb"
 RUNTIME_ENV="${OCTAVE_ALL_DIR}/env.sh"
-ACTIVATE_SCRIPT="${ROOT_DIR}/activate_optimized_octave.sh"
+ACTIVATE_SCRIPT="${SCRIPT_DIR}/activate_optimized_octave.sh"
 JUPYTER_VENV="${ROOT_DIR}/.venv"
+
+# HYPRE paths (all inside .octave_all/ to keep things self-contained)
+HYPRE_SRC_DIR="${HYPRE_SRC_DIR:-${SRC_DIR}/hypre}"
+HYPRE_BUILD_DIR="${HYPRE_BUILD_DIR:-${BUILD_DIR}/hypre-openmp}"
+HYPRE_INSTALL_DIR="${HYPRE_INSTALL_DIR:-${INSTALL_DIR}/hypre-openmp}"
 
 if command -v getconf >/dev/null 2>&1; then
   NPROC_DEFAULT="$(getconf _NPROCESSORS_ONLN 2>/dev/null || true)"

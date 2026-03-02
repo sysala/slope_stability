@@ -5,7 +5,7 @@ function build_hypre_boomeramg_mex(hypre_root)
 %   LINEAR_SOLVERS.build_hypre_boomeramg_mex(hypre_root)
 %
 % Default hypre_root:
-%   third_party/hypre-openmp   (relative to repository root)
+%   .octave_all/install/hypre-openmp   (relative to repository root)
 %
 % Requires:
 %   - mex configured
@@ -17,13 +17,13 @@ root_dir = fileparts(this_dir);
 repo_dir = fileparts(root_dir);
 
 if nargin < 1 || isempty(hypre_root)
-    hypre_root = fullfile(repo_dir, 'third_party', 'hypre-openmp');
+    hypre_root = fullfile(repo_dir, '.octave_all', 'install', 'hypre-openmp');
 end
 hypre_root = char(hypre_root);
 
 inc_dir = fullfile(hypre_root, 'include');
 lib_dir = fullfile(hypre_root, 'lib');
-src = fullfile(root_dir, 'mex', 'hypre_boomeramg_mex.cpp');
+src = fullfile(this_dir, 'mex', 'hypre_boomeramg_mex.cpp');
 
 if ~isfolder(inc_dir)
     error('Missing include directory: %s', inc_dir);
@@ -40,7 +40,7 @@ fprintf('  source: %s\n', src);
 fprintf('  include: %s\n', inc_dir);
 fprintf('  lib: %s\n', lib_dir);
 
-out_dir = root_dir;
+out_dir = this_dir;
 mex_file = fullfile(out_dir, ['hypre_boomeramg_mex.', mexext]);
 if isfile(mex_file)
     delete(mex_file);
@@ -73,10 +73,10 @@ catch ME
     if ~isempty(strfind(ME.message, 'is not a MEX file')) && isfile(mex_file)
         warning('build_hypre_boomeramg_mex:postcheck', ...
             ['mex post-build check reported ENOTMEX, but output exists. ', ...
-             'Trying runtime load check...']);
+            'Trying runtime load check...']);
         addpath(out_dir);
         clear mex;
-        hypre_boomeramg_mex('info'); %#ok<NASGU>
+        LINEAR_SOLVERS.hypre_boomeramg_mex('info'); %#ok<NASGU>
         clear mex;
     else
         rethrow(ME);

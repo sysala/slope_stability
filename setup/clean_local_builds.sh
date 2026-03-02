@@ -10,6 +10,9 @@ PURGE_RESULTS="${PURGE_RESULTS:-0}"
 
 log "Cleaning local build artifacts under ${OCTAVE_ALL_DIR}"
 rm -rf "${BUILD_DIR}" "${INSTALL_DIR}" "${OCTAVE_ALL_DIR}/bin" "${JUPYTER_VENV}" "${RUNTIME_ENV}"
+rm -f "${ACTIVATE_SCRIPT}"
+log "Cleaning HYPRE source (inside ${SRC_DIR})"
+rm -rf "${HYPRE_SRC_DIR}"
 
 if [[ "${PURGE_SOURCES}" == "1" ]]; then
   log "PURGE_SOURCES=1 -> removing downloaded source archives"

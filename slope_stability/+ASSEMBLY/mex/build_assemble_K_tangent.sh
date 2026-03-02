@@ -3,16 +3,16 @@
 # Run from the slope_stability/ directory.
 #
 # Usage:
-#   bash mex/build_assemble_K_tangent.sh
+#   bash +ASSEMBLY/mex/build_assemble_K_tangent.sh
 #
-# The compiled .mex file is placed in the current directory so that
-# Octave can find it when running from slope_stability/.
+# The compiled .mex file is placed in +ASSEMBLY/ so that
+# Octave can find it via the ASSEMBLY package namespace.
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SRC="$SCRIPT_DIR/assemble_K_tangent_vals.c"
-OUT_DIR="$(pwd)"
+OUT_DIR="$SCRIPT_DIR/.."
 
 echo "Compiling assemble_K_tangent_vals.c ..."
 

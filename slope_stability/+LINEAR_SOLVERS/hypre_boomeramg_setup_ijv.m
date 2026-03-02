@@ -15,11 +15,11 @@ if nargin < 7
 end
 if isempty(opts), opts = struct(); end
 
-if exist('hypre_boomeramg_mex', 'file') ~= 3
+if ~LINEAR_SOLVERS.is_hypre_mex_available()
     error(['hypre_boomeramg_mex is not built. Run ', ...
         'LINEAR_SOLVERS.build_hypre_boomeramg_mex from slope_stability first.']);
 end
 
-info = hypre_boomeramg_mex('setup_ijv', I(:), J(:), V(:), double(n), ...
+info = LINEAR_SOLVERS.hypre_boomeramg_mex('setup_ijv', I(:), J(:), V(:), double(n), ...
     null_space, opts, instance_id);
 end
