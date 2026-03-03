@@ -88,6 +88,8 @@ N_h  = 1;        % h=1/N_h - discretization parameter
 file_path = 'meshes/comsol_mesh.h5';
 [coord, elem, surf, Q, material, triangle_labels] = MESH.load_mesh_P2(file_path,1);
 
+% Uncomment to reduce matrix bandwidth via Reverse Cuthill-McKee node reordering:
+% [coord, elem, surf, Q] = MESH.reorder_mesh(coord, elem, surf, Q);
 
 % number of nodes, elements and integration points + print
 n_n=size(coord,2);

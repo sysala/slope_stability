@@ -2,14 +2,14 @@
 % =========================================================================
 %
 %  This program solves a 2D slope stability problem by the modified shear
-%  strength reduction (SSR) method described in (Sysala et al., CAS 2025). 
+%  strength reduction (SSR) method described in (Sysala et al., CAS 2025).
 %  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
 %  standard finite elements (P1, P2 or P4 elements) and meshes
-%  with different densities are considered. For P2 elements, the 7-point 
-%  Gauss quadrature is used. To find the safety factor of the SSR method, 
+%  with different densities are considered. For P2 elements, the 7-point
+%  Gauss quadrature is used. To find the safety factor of the SSR method,
 %  two continuation techniques are available: direct and indirect. A case
-%  study on a heterogeneous river embankment with unconfined seepage from 
-%  the locality Luzec (Czechia) is considered, 
+%  study on a heterogeneous river embankment with unconfined seepage from
+%  the locality Luzec (Czechia) is considered,
 %  see (Sysala et al., CAS 2023).
 %
 % ======================================================================
@@ -33,28 +33,28 @@ Davis_type='B';
 %    poisson ...  Poisson's ratio (nu)
 %    gamma_sat ...   Specific weight - saturated (gamma_sat in kN/m^3)
 %    gamma_unsat ... Specific weight - unsaturated (gamma_unsat in kN/m^3)
-% If gamma_sat and gamma_unsat are not distinguished, use the same values 
-% for these parameters. Each row of the table represents one subdomain. If 
+% If gamma_sat and gamma_unsat are not distinguished, use the same values
+% for these parameters. Each row of the table represents one subdomain. If
 % a homogeneous body is considered, only one row is prescribed.
 mat_props = ...
-   [14.0, 21.00, 0.00, 16000, 0.4, 21.0, 21.0;  % S1 - weathered claystone
-     1.0, 33.00, 0.00, 16000, 0.4, 21.0, 19.0;  % S2 - fluvial gravel
-     7.5, 30.25, 0.00, 16000, 0.4, 22.0, 21.0;  % S3 - fluvial clay
-     1.6, 24.00, 0.00, 16000, 0.4, 21.0, 19.0;  % S4 - clayey sand
-     2.0, 37.00, 0.00, 16000, 0.4, 21.0, 21.0;  % S5 - drainage
-     1.6, 24.00, 0.00, 16000, 0.4, 21.0, 19.0;  % S6 - clayey sand
+    [14.0, 21.00, 0.00, 16000, 0.4, 21.0, 21.0;  % S1 - weathered claystone
+    1.0, 33.00, 0.00, 16000, 0.4, 21.0, 19.0;  % S2 - fluvial gravel
+    7.5, 30.25, 0.00, 16000, 0.4, 22.0, 21.0;  % S3 - fluvial clay
+    1.6, 24.00, 0.00, 16000, 0.4, 21.0, 19.0;  % S4 - clayey sand
+    2.0, 37.00, 0.00, 16000, 0.4, 21.0, 21.0;  % S5 - drainage
+    1.6, 24.00, 0.00, 16000, 0.4, 21.0, 19.0;  % S6 - clayey sand
     50.0, 45.00, 0.00, 16000, 0.4, 19.0, 19.0;  % S7 - road
-     1.6, 24.00, 0.00, 16000, 0.4, 21.0, 19.0]; % S8 - clayey sand
+    1.6, 24.00, 0.00, 16000, 0.4, 21.0, 19.0]; % S8 - clayey sand
 
 %  Hydraulic conductivity for each subdomain [m/day]
-  k = [0.864e-3  % S1 - weathered claystone
-           86.4  % S2 - fluvial gravel
-       0.864e-3  % S3 - fluvial clay       
-           0.86  % S4 - clayey sand
-           86.4  % S5 - drainage
-           0.86  % S6 - clayey sand
-       0.864e-3  % S7 - road
-          0.86]; % S8 - clayey sand 
+k = [0.864e-3  % S1 - weathered claystone
+    86.4  % S2 - fluvial gravel
+    0.864e-3  % S3 - fluvial clay
+    0.86  % S4 - clayey sand
+    86.4  % S5 - drainage
+    0.86  % S6 - clayey sand
+    0.864e-3  % S7 - road
+    0.86]; % S8 - clayey sand
 
 %% Data from the reference element
 % quadrature points and weights for volume integration
@@ -67,6 +67,10 @@ mat_props = ...
 %   P1:  4571 / 8772
 %   P2: 17913 / 8772
 [coord, elem, Q, material_identifier, surf] = MESH.load_mesh_Luzec(elem_type, 'meshes/Luzec/');
+
+% Uncomment to reduce matrix bandwidth via Reverse Cuthill-McKee node reordering:
+% [coord, elem, surf, Q] = MESH.reorder_mesh(coord, elem, surf, Q);
+
 % number of nodes, elements and integration points + print
 n_n=size(coord,2);
 n_unknown=length(coord(Q)); % number of unknowns
@@ -85,7 +89,7 @@ fprintf('\n');
 %% Computation of porous water pressure
 
 % Hydraulic conductivity ateach integration point
-conduct0=SEEPAGE.heter_conduct(material_identifier,n_q,k); 
+conduct0=SEEPAGE.heter_conduct(material_identifier,n_q,k);
 
 % specific weight of water in kPa
 grho=9.81;
@@ -98,22 +102,22 @@ Q_w(unique(surf(:,Q_D)))=0;
 Q_w((abs(coord(1,:)-93.07)<0.05)&(abs(coord(2,:)-18.16)<0.05))=0;
 
 % Nonhomogeneous part of the pressure (problem dependent)
-x1=91.12; y1=15.75;   
-x2=101.845; y2=22.40; 
+x1=91.12; y1=15.75;
+x2=101.845; y2=22.40;
 pw_D=zeros(1,n_n);
 part1=(coord(1,:)<x1+1e-9)&(coord(2,:)<y1);
 part2=(coord(1,:)>=x1+1e-9)&(coord(1,:)<x2+1e-9)&(coord(2,:)<((y2-y1)/(x2-x1))*(coord(1,:)-x1)+y1);
 part3=(coord(1,:)>=x2+1e-9);
 pw_D(part1)=grho*(y1-coord(2,part1));
 pw_D(part2)=grho*(((y2-y1)/(x2-x1))*(coord(1,part2)-x1)+y1-coord(2,part2));
-pw_D(part3)=grho*(y2-coord(2,part3));  
+pw_D(part3)=grho*(y2-coord(2,part3));
 
 % Computation on the pore pressure and its gradient
 [pw, grad_p, mater_sat]=SEEPAGE.seepage_problem_2D...
-                         (coord,elem,Q_w,pw_D,grho,conduct0,HatP,DHatP1,DHatP2,WF);
+    (coord,elem,Q_w,pw_D,grho,conduct0,HatP,DHatP1,DHatP2,WF);
 
-% Saturation - a prescribed logical array indicating integration points 
-%              where the body is saturated. If gamma_sat and gamma_unsat 
+% Saturation - a prescribed logical array indicating integration points
+%              where the body is saturated. If gamma_sat and gamma_unsat
 %              are the same, set saturation=true(1,n_int). Otherwise,
 %              this logical array is derived from the phreatic surface.
 mater_sat_ext=repmat(mater_sat,n_q,1);
@@ -123,19 +127,19 @@ saturation=mater_sat_ext(:);
 
 % Fields with prescribed material properties
 fields = {'c0',      ... % Cohesion (c)
-          'phi',     ... % Friction angle (phi in degrees)
-          'psi',     ... % Dilatancy angle (psi in degrees)
-          'young',   ... % Young's modulus (E)
-          'poisson', ... % Poisson's ratio (nu)
-          'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
-          'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
+    'phi',     ... % Friction angle (phi in degrees)
+    'psi',     ... % Dilatancy angle (psi in degrees)
+    'young',   ... % Young's modulus (E)
+    'poisson', ... % Poisson's ratio (nu)
+    'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
+    'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
 
 % Convert properties to structured format.
 materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props, 2), 'UniformOutput', false);
 
 % Material parameters at integration points.
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
-      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
+    ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 %% Assembling for mechanics
 

@@ -1,13 +1,13 @@
 %%  Heterogeneous slope and its stability (via SSR methods)
 % ======================================================================
 %  This program solves a 3D slope stability problem by the modified shear
-%  strength reduction (SSR) method described in (Sysala et al., CAS 2025). 
+%  strength reduction (SSR) method described in (Sysala et al., CAS 2025).
 %  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
-%  standard finite elements (either P1 or P2 elements) and meshes with 
-%  different densities are considered. For P2 elements, the 11-point 
-%  Gauss quadrature is used. To find the safety factor of the SSR method, 
-%  two continuation techniques are available: direct and indirect. 
-%  A benchmark with a heterogeneous slope from (Sysala et al., CAS 2025) is 
+%  standard finite elements (either P1 or P2 elements) and meshes with
+%  different densities are considered. For P2 elements, the 11-point
+%  Gauss quadrature is used. To find the safety factor of the SSR method,
+%  two continuation techniques are available: direct and indirect.
+%  A benchmark with a heterogeneous slope from (Sysala et al., CAS 2025) is
 %  considered.
 %
 % ======================================================================
@@ -30,13 +30,13 @@ Davis_type = 'B';
 %    poisson ...  Poisson's ratio (nu)
 %    gamma_sat ...   Specific weight - saturated (gamma_sat in kN/m^3)
 %    gamma_unsat ... Specific weight - unsaturated (gamma_unsat in kN/m^3)
-% If gamma_sat and gamma_unsat are not distinguished, use the same values 
-% for these parameters. Each row of the table represents one subdomain. If 
+% If gamma_sat and gamma_unsat are not distinguished, use the same values
+% for these parameters. Each row of the table represents one subdomain. If
 % a homogeneous body is considered, only one row is prescribed.
 mat_props = [15, 30,  0, 10000, 0.33, 19, 19;  % Cover layer
-             15, 38,  0, 50000, 0.30, 22, 22;  % General foundation
-             10, 35,  0, 50000, 0.30, 21, 21;  % Relatively weak foundation
-             18, 32,  0, 20000, 0.33, 20, 20]; % General slope mass
+    15, 38,  0, 50000, 0.30, 22, 22;  % General foundation
+    10, 35,  0, 50000, 0.30, 21, 21;  % Relatively weak foundation
+    18, 32,  0, 20000, 0.33, 20, 20]; % General slope mass
 
 %% Data from the reference element
 % Quadrature points and weights for volume integration.
@@ -71,6 +71,9 @@ switch(elem_type)
         error('Bad choice of element type');
 end
 
+% Uncomment to reduce matrix bandwidth via Reverse Cuthill-McKee node reordering:
+% [coord, elem, surf, Q] = MESH.reorder_mesh(coord, elem, surf, Q);
+
 % Number of nodes, elements, and integration points + print.
 n_n = size(coord, 2);          % Number of nodes.
 n_unknown = length(coord(Q));  % Number of unknowns.
@@ -87,25 +90,25 @@ fprintf('  number of integration points = %d \n', n_int);
 %% Material parameters at integration points
 % Fields with prescribed material properties
 fields = {'c0',      ... % Cohesion (c)
-          'phi',     ... % Friction angle (phi in degrees)
-          'psi',     ... % Dilatancy angle (psi in degrees)
-          'young',   ... % Young's modulus (E)
-          'poisson', ... % Poisson's ratio (nu)
-          'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
-          'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
+    'phi',     ... % Friction angle (phi in degrees)
+    'psi',     ... % Dilatancy angle (psi in degrees)
+    'young',   ... % Young's modulus (E)
+    'poisson', ... % Poisson's ratio (nu)
+    'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
+    'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
 
 % Convert properties to structured format.
 materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props, 2), 'UniformOutput', false);
 
-% saturation - a prescribed logical array indicating integration points 
-%              where the body is saturated. If gamma_sat and gamma_unsat 
+% saturation - a prescribed logical array indicating integration points
+%              where the body is saturated. If gamma_sat and gamma_unsat
 %              are the same, set saturation=true(1,n_int). Otherwise,
 %              this logical array is derived from a given phreatic surface.
 saturation = true(1,n_int);
 
 % Material parameters at integration points.
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
-      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
+    ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 
 %% Assembly of the elastic matrix and volume forces vector

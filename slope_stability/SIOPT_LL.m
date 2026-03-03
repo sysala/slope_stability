@@ -2,11 +2,11 @@
 % ======================================================================
 %  This program solves a 2D slope stability problem by the limit
 %  load (LL) method described in (Sysala et al., CAS 2025). The Mohr-
-%  Coulomb yield criterion, Davis approach, standard finite elements 
+%  Coulomb yield criterion, Davis approach, standard finite elements
 %  (either P1 or P2 elements) and meshes with different densities are
 %  considered. For P2 elements, the 11-point Gauss quadrature
-%  is used. To find the safety factor of the LL method, the indirect 
-%  continuation technique is used. The benchmark described in the paper 
+%  is used. To find the safety factor of the LL method, the indirect
+%  continuation technique is used. The benchmark described in the paper
 %  (Sysala et al., SIOPT 2025) is considered.
 %
 % ======================================================================
@@ -18,9 +18,9 @@ elem_type = 'P2';
 % Davis_type - choice of Davis' approach; available choices: 'A','B','C'
 Davis_type = 'B';
 
-lambda_ell = 1.0; % choose lambda_ell = 1.0 for the LL method, 
-                  % to construct the function ell, which relates the LL and 
-                  % SSR method, choose other values of lambda_ell
+lambda_ell = 1.0; % choose lambda_ell = 1.0 for the LL method,
+% to construct the function ell, which relates the LL and
+% SSR method, choose other values of lambda_ell
 
 % Material parameters for each subdomain. In the following table, we
 % specify in each column the following material parameters, respectively:
@@ -32,10 +32,10 @@ lambda_ell = 1.0; % choose lambda_ell = 1.0 for the LL method,
 %    poisson ...  Poisson's ratio (nu)
 %    gamma_sat ...   Specific weight - saturated (gamma_sat in kN/m^3)
 %    gamma_unsat ... Specific weight - unsaturated (gamma_unsat in kN/m^3)
-% If gamma_sat and gamma_unsat are not distinguished, use the same values 
-% for these parameters. Each row of the table represents one subdomain. If 
+% If gamma_sat and gamma_unsat are not distinguished, use the same values
+% for these parameters. Each row of the table represents one subdomain. If
 % a homogeneous body is considered, only one row is prescribed.
-mat_props = [15, 20, 20, 40000, 0.3, 20, 20]; 
+mat_props = [15, 20, 20, 40000, 0.3, 20, 20];
 
 %% Data from the reference element
 % quadrature points and weights for volume integration
@@ -57,10 +57,13 @@ switch(elem_type)
         error("Prepared meshes are only for P2 elements.")
     case 'P2'
         [coord, elem, surf, Q, ~] = MESH.load_mesh_P2(file_path, 1);
-        fprintf('P2 elements: \n')        
+        fprintf('P2 elements: \n')
     otherwise
         error('bad choice of element type');
 end
+
+% Uncomment to reduce matrix bandwidth via Reverse Cuthill-McKee node reordering:
+% [coord, elem, surf, Q] = MESH.reorder_mesh(coord, elem, surf, Q);
 
 % number of nodes, elements and integration points + print
 n_n = size(coord,2);          % number of nodes
@@ -81,25 +84,25 @@ material_identifier = zeros(1,n_e);
 %% Material parameters at integration points
 % Fields with prescribed material properties
 fields = {'c0',      ... % Cohesion (c)
-          'phi',     ... % Friction angle (phi in degrees)
-          'psi',     ... % Dilatancy angle (psi in degrees)
-          'young',   ... % Young's modulus (E)
-          'poisson', ... % Poisson's ratio (nu)
-          'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
-          'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
+    'phi',     ... % Friction angle (phi in degrees)
+    'psi',     ... % Dilatancy angle (psi in degrees)
+    'young',   ... % Young's modulus (E)
+    'poisson', ... % Poisson's ratio (nu)
+    'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
+    'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
 
 % Convert properties to structured format.
 materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props, 2), 'UniformOutput', false);
 
-% saturation - a prescribed logical array indicating integration points 
-%              where the body is saturated. If gamma_sat and gamma_unsat 
+% saturation - a prescribed logical array indicating integration points
+%              where the body is saturated. If gamma_sat and gamma_unsat
 %              are the same, set saturation=true(1,n_int). Otherwise,
 %              this logical array is derived from a given phreatic surface.
 saturation = true(1,n_int);
 
 % Material parameters at integration points.
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
-      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
+    ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 %% Assembly of the elastic matrix and volume forces vector
 
@@ -150,7 +153,7 @@ constitutive_matrix_builder = CONSTITUTIVE_PROBLEM.CONSTITUTIVE(B, c0, phi, psi,
 
 
 %--------------------------------------------------------------------------
-%% Computation of the limit load factor by the indirect continuation 
+%% Computation of the limit load factor by the indirect continuation
 
 fprintf('\n Indirect continuation method for the LL method\n');
 tic;

@@ -2,13 +2,13 @@
 % =========================================================================
 %
 %  This program solves a 2D slope stability problem by the modified shear
-%  strength reduction (SSR) method described in (Sysala et al., CAS 2025). 
+%  strength reduction (SSR) method described in (Sysala et al., CAS 2025).
 %  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
 %  standard finite elements (P1, P2 or P4 elements) and meshes
-%  with different densities are considered. For P2 elements, the 7-point 
-%  Gauss quadrature is used. To find the safety factor of the SSR method, 
+%  with different densities are considered. For P2 elements, the 7-point
+%  Gauss quadrature is used. To find the safety factor of the SSR method,
 %  two continuation techniques are available: direct and indirect. A
-%  bechmark problem on a high heterogeneous embankment dam with unconfined 
+%  bechmark problem on a high heterogeneous embankment dam with unconfined
 %  seepage is considered, see (Sysala et al., CAS 2023).
 %
 % ======================================================================
@@ -32,32 +32,32 @@ Davis_type='B';
 %    poisson ...  Poisson's ratio (nu)
 %    gamma_sat ...   Specific weight - saturated (gamma_sat in kN/m^3)
 %    gamma_unsat ... Specific weight - unsaturated (gamma_unsat in kN/m^3)
-% If gamma_sat and gamma_unsat are not distinguished, use the same values 
-% for these parameters. Each row of the table represents one subdomain. If 
+% If gamma_sat and gamma_unsat are not distinguished, use the same values
+% for these parameters. Each row of the table represents one subdomain. If
 % a homogeneous body is considered, only one row is prescribed.
 mat_props = ...
-   [50.0, 42.00, 42.00, 16000, 0.4, 27.0, 27.0;  % Subdomain 1 - Zone X
-     0.5, 41.00,  0.00, 16000, 0.4, 22.0, 22.0;  % Subdomain 2 - Zone RF
-     0.5, 40.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 3 - Zone C2
-     0.0, 38.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 4 - Zone B
+    [50.0, 42.00, 42.00, 16000, 0.4, 27.0, 27.0;  % Subdomain 1 - Zone X
+    0.5, 41.00,  0.00, 16000, 0.4, 22.0, 22.0;  % Subdomain 2 - Zone RF
+    0.5, 40.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 3 - Zone C2
+    0.0, 38.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 4 - Zone B
     10.0, 25.00,  0.00, 16000, 0.4, 22.0, 22.0;  % Subdomain 5 - Zone A
-     0.5, 41.00,  0.00, 16000, 0.4, 22.0, 22.0;  % Subdomain 6 - Zone RF
+    0.5, 41.00,  0.00, 16000, 0.4, 22.0, 22.0;  % Subdomain 6 - Zone RF
     75.0, 42.00, 42.00, 16000, 0.4, 27.0, 27.0;  % Subdomain 7 - Zone E
-     0.0, 38.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 8 - Zone B
-     0.5, 41.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 9 - Zone C1
-     0.5, 41.00,  0.00, 16000, 0.4, 21.0, 21.0]; % Subdomain 10 - Zone D  
+    0.0, 38.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 8 - Zone B
+    0.5, 41.00,  0.00, 16000, 0.4, 23.0, 23.0;  % Subdomain 9 - Zone C1
+    0.5, 41.00,  0.00, 16000, 0.4, 21.0, 21.0]; % Subdomain 10 - Zone D
 
 %  Hydraulic conductivity for each subdomain [m/s]
-  k = [1.0e-5   % Subdomain 1 - Zone X
-       1.0e-4   % Subdomain 2 - Zone RF
-       5.0e-5   % Subdomain 3 - Zone C2
-       5.0e-6   % Subdomain 4 - Zone B
-       1.0e-9   % Subdomain 5 - Zone A
-       1.0e-4   % Subdomain 6 - Zone RF
-       2.0e-9   % Subdomain 7 - Zone E
-       5.0e-6   % Subdomain 8 - Zone B
-       5.0e-5   % Subdomain 9 - Zone C1     
-       5.0e-4]; % Subdomain 10 - Zone D            
+k = [1.0e-5   % Subdomain 1 - Zone X
+    1.0e-4   % Subdomain 2 - Zone RF
+    5.0e-5   % Subdomain 3 - Zone C2
+    5.0e-6   % Subdomain 4 - Zone B
+    1.0e-9   % Subdomain 5 - Zone A
+    1.0e-4   % Subdomain 6 - Zone RF
+    2.0e-9   % Subdomain 7 - Zone E
+    5.0e-6   % Subdomain 8 - Zone B
+    5.0e-5   % Subdomain 9 - Zone C1
+    5.0e-4]; % Subdomain 10 - Zone D
 
 %% Data from the reference element
 % quadrature points and weights for volume integration
@@ -70,6 +70,10 @@ mat_props = ...
 %   P1:  2565 / 4920
 %   P2: 10049 / 4920
 [coord, elem, Q, material_identifier, surf] = MESH.load_mesh_Franz_dam(elem_type, 'meshes/Franz_dam/');
+
+% Uncomment to reduce matrix bandwidth via Reverse Cuthill-McKee node reordering:
+% [coord, elem, surf, Q] = MESH.reorder_mesh(coord, elem, surf, Q);
+
 % number of nodes, elements and integration points + print
 n_n=size(coord,2);
 n_unknown=length(coord(Q)); % number of unknowns
@@ -88,7 +92,7 @@ fprintf('\n');
 %% Computation of porous water pressure
 
 % Hydraulic conductivity ateach integration point
-conduct0=SEEPAGE.heter_conduct(material_identifier,n_q,k); 
+conduct0=SEEPAGE.heter_conduct(material_identifier,n_q,k);
 
 % specific weight of water in kPa
 grho=9.81;
@@ -99,22 +103,22 @@ Q_w=true(1,n_n);
 Q_w(unique(surf(:,Q_D)))=0;
 
 % Nonhomogeneous part of the pressure (problem dependent)
-x1=-82.5; y1=-50; 
-x2=172.5; y2=-112; 
+x1=-82.5; y1=-50;
+x2=172.5; y2=-112;
 pw_D=zeros(1,n_n);
 part1=(coord(1,:)<x1+1e-9)&(coord(2,:)<y1);
 part2=(coord(1,:)>=x1+1e-9)&(coord(1,:)<x2+1e-9)&(coord(2,:)<((y2-y1)/(x2-x1))*(coord(1,:)-x1)+y1);
 part3=(coord(1,:)>=x2+1e-9)&(coord(2,:)<y2);
 pw_D(part1)=grho*(y1-coord(2,part1));
 pw_D(part2)=grho*(((y2-y1)/(x2-x1))*(coord(1,part2)-x1)+y1-coord(2,part2));
-pw_D(part3)=grho*(y2-coord(2,part3));  
+pw_D(part3)=grho*(y2-coord(2,part3));
 
 % Computation on the pore pressure and its gradient
 [pw, grad_p, mater_sat]=SEEPAGE.seepage_problem_2D...
-                         (coord,elem,Q_w,pw_D,grho,conduct0,HatP,DHatP1,DHatP2,WF);
+    (coord,elem,Q_w,pw_D,grho,conduct0,HatP,DHatP1,DHatP2,WF);
 
-% Saturation - a prescribed logical array indicating integration points 
-%              where the body is saturated. If gamma_sat and gamma_unsat 
+% Saturation - a prescribed logical array indicating integration points
+%              where the body is saturated. If gamma_sat and gamma_unsat
 %              are the same, set saturation=true(1,n_int). Otherwise,
 %              this logical array is derived from the phreatic surface.
 mater_sat_ext=repmat(mater_sat,n_q,1);
@@ -124,19 +128,19 @@ saturation=mater_sat_ext(:);
 
 % Fields with prescribed material properties
 fields = {'c0',      ... % Cohesion (c)
-          'phi',     ... % Friction angle (phi in degrees)
-          'psi',     ... % Dilatancy angle (psi in degrees)
-          'young',   ... % Young's modulus (E)
-          'poisson', ... % Poisson's ratio (nu)
-          'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
-          'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
+    'phi',     ... % Friction angle (phi in degrees)
+    'psi',     ... % Dilatancy angle (psi in degrees)
+    'young',   ... % Young's modulus (E)
+    'poisson', ... % Poisson's ratio (nu)
+    'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
+    'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
 
 % Convert properties to structured format.
 materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props, 2), 'UniformOutput', false);
 
 % Material parameters at integration points.
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
-      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
+    ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 %% Assembling for mechanics
 

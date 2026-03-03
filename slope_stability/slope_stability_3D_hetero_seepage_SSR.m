@@ -36,10 +36,10 @@ Davis_type='B';
 % a homogeneous body is considered, only one row is prescribed.
 
 mat_props = [15, 38,  0, 50000, 0.30, 22, 22;  % General foundation
-             10, 35,  0, 50000, 0.30, 21, 21;  % Relatively weak foundation
-             18, 32,  0, 20000, 0.33, 20, 20;  % General slope mass
-             15, 30,  0, 10000, 0.33, 19, 19;  % Cover layer
-             ];
+    10, 35,  0, 50000, 0.30, 21, 21;  % Relatively weak foundation
+    18, 32,  0, 20000, 0.33, 20, 20;  % General slope mass
+    15, 30,  0, 10000, 0.33, 19, 19;  % Cover layer
+    ];
 
 % Hydraulic conductivity for each subdomain [m/s]
 k = [1; 1; 1; 1] ; % homogeneous conductivity
@@ -58,7 +58,10 @@ k = [1; 1; 1; 1] ; % homogeneous conductivity
 %   slope_with_waterlevels_concave_L4.h5: 473420 / 339843
 file_path = 'meshes/slope_with_waterlevels_concave.h5';
 [coord, elem, surf, Q, material_identifier, triangle_labels] = ...
-                                MESH.load_mesh_gmsh_waterlevels(file_path);
+    MESH.load_mesh_gmsh_waterlevels(file_path);
+
+% Uncomment to reduce matrix bandwidth via Reverse Cuthill-McKee node reordering:
+% [coord, elem, surf, Q] = MESH.reorder_mesh(coord, elem, surf, Q);
 
 % number of nodes, elements and integration points + print
 n_n=size(coord,2);
@@ -113,7 +116,7 @@ materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props
 
 % Material parameters at integration points.
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
-      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
+    ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 %% Assembling for mechanics
 

@@ -2,14 +2,14 @@
 % =========================================================================
 %
 %  This program solves a 2D slope stability problem by the modified shear
-%  strength reduction (SSR) method described in (Sysala et al., CAS 2025). 
+%  strength reduction (SSR) method described in (Sysala et al., CAS 2025).
 %  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
 %  standard finite elements (P1, P2 or P4 elements) and meshes
-%  with different densities are considered. For P2 elements, the 7-point 
-%  Gauss quadrature is used. To find the safety factor of the SSR method, 
-%  two continuation techniques are available: direct and indirect. 
-%  A benchmark with a homogeneous slope is considered. A heterogeneous 
-%  slope from the locality Doubrava-Kozinec is considered, 
+%  with different densities are considered. For P2 elements, the 7-point
+%  Gauss quadrature is used. To find the safety factor of the SSR method,
+%  two continuation techniques are available: direct and indirect.
+%  A benchmark with a homogeneous slope is considered. A heterogeneous
+%  slope from the locality Doubrava-Kozinec is considered,
 %  see (Sysala et al., NAG 2021).
 %
 % ======================================================================
@@ -33,11 +33,11 @@ Davis_type='B';
 %    poisson ...  Poisson's ratio (nu)
 %    gamma_sat ...   Specific weight - saturated (gamma_sat in kN/m^3)
 %    gamma_unsat ... Specific weight - unsaturated (gamma_unsat in kN/m^3)
-% If gamma_sat and gamma_unsat are not distinguished, use the same values 
-% for these parameters. Each row of the table represents one subdomain. If 
+% If gamma_sat and gamma_unsat are not distinguished, use the same values
+% for these parameters. Each row of the table represents one subdomain. If
 % a homogeneous body is considered, only one row is prescribed.
 mat_props = ...
-   [9,  26, 0, 16000, 0.4, 20.3, 20.7;  % Subdomain #1
+    [9,  26, 0, 16000, 0.4, 20.3, 20.7;  % Subdomain #1
     2,  33, 0, 16000, 0.4, 19.0, 20.5;  % Subdomain #2
     5,  27, 0, 16000, 0.4, 19.4, 21.4;  % Subdomain #3
     3,  13, 0, 16000, 0.4, 20.0, 20.5;  % Subdomain #4
@@ -56,6 +56,10 @@ mat_props = ...
 %   P1:  3656 / 7026
 %   P2: 14337 / 7026
 [coord, elem, Q, material_identifier] = MESH.load_mesh_Kozinec(elem_type, 'meshes/Kozinec/');
+
+% Uncomment to reduce matrix bandwidth via Reverse Cuthill-McKee node reordering:
+% [coord, elem, ~, Q] = MESH.reorder_mesh(coord, elem, [], Q);
+
 % number of nodes, elements and integration points + print
 n_n=size(coord,2);
 n_unknown=length(coord(Q)); % number of unknowns
@@ -74,25 +78,25 @@ fprintf('\n');
 %% Material Parameters at Integration Points
 % Fields with prescribed material properties
 fields = {'c0',      ... % Cohesion (c)
-          'phi',     ... % Friction angle (phi in degrees)
-          'psi',     ... % Dilatancy angle (psi in degrees)
-          'young',   ... % Young's modulus (E)
-          'poisson', ... % Poisson's ratio (nu)
-          'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
-          'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
+    'phi',     ... % Friction angle (phi in degrees)
+    'psi',     ... % Dilatancy angle (psi in degrees)
+    'young',   ... % Young's modulus (E)
+    'poisson', ... % Poisson's ratio (nu)
+    'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
+    'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
 
 % Convert properties to structured format.
 materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props, 2), 'UniformOutput', false);
 
-% saturation - a prescribed logical array indicating integration points 
-%              where the body is saturated. If gamma_sat and gamma_unsat 
+% saturation - a prescribed logical array indicating integration points
+%              where the body is saturated. If gamma_sat and gamma_unsat
 %              are the same, set saturation=true(1,n_int). Otherwise,
 %              this logical array is derived from a given phreatic surface.
 saturation = ASSEMBLY.saturated_zone(coord,elem,HatP);
 
 % Material parameters at integration points.
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
-      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
+    ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 
 %% Assembling

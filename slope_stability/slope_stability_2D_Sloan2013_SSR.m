@@ -2,13 +2,13 @@
 % =========================================================================
 %
 %  This program solves a 2D slope stability problem by the modified shear
-%  strength reduction (SSR) method described in (Sysala et al., CAS 2025). 
+%  strength reduction (SSR) method described in (Sysala et al., CAS 2025).
 %  The Mohr-Coulomb yield criterion, 3 Davis approaches (denoted by A, B, C),
 %  standard finite elements (P1, P2 or P4 elements) and meshes
-%  with different densities are considered. For P2 elements, the 7-point 
-%  Gauss quadrature is used. To find the safety factor of the SSR method, 
+%  with different densities are considered. For P2 elements, the 7-point
+%  Gauss quadrature is used. To find the safety factor of the SSR method,
 %  two continuation techniques are available: direct and indirect. A
-%  bechmark problem on a slope with a weak layer and unconfined 
+%  bechmark problem on a slope with a weak layer and unconfined
 %  seepage is considered, see (Sloan, Geotechnique 2013). It is possible to
 %  change geometrical parameters and mesh density.
 %
@@ -33,37 +33,37 @@ Davis_type='B';
 %    poisson ...  Poisson's ratio (nu)
 %    gamma_sat ...   Specific weight - saturated (gamma_sat in kN/m^3)
 %    gamma_unsat ... Specific weight - unsaturated (gamma_unsat in kN/m^3)
-% If gamma_sat and gamma_unsat are not distinguished, use the same values 
-% for these parameters. Each row of the table represents one subdomain. If 
+% If gamma_sat and gamma_unsat are not distinguished, use the same values
+% for these parameters. Each row of the table represents one subdomain. If
 % a homogeneous body is considered, only one row is prescribed.
 mat_props = ...
-   [28.5, 20, 20, 16000, 0.4, 18.84, 18.84;  
-     0.0, 10, 10, 16000, 0.4, 18.84, 18.84];   
+    [28.5, 20, 20, 16000, 0.4, 18.84, 18.84;
+    0.0, 10, 10, 16000, 0.4, 18.84, 18.84];
 % mat_props = ...
-%    [28.5, 20, 20, 16000, 0.4, 18.84, 18.84;  
-%     28.5, 20, 20, 16000, 0.4, 18.84, 18.84];   
+%    [28.5, 20, 20, 16000, 0.4, 18.84, 18.84;
+%     28.5, 20, 20, 16000, 0.4, 18.84, 18.84];
 
 % Hydraulic conductivity for each subdomain [m/s]
-k = [1.0   % Subdomain 1 - slope+foundation     
-     1.0]; % Subdomain 2 - weaked foundation layer          
+k = [1.0   % Subdomain 1 - slope+foundation
+    1.0]; % Subdomain 2 - weaked foundation layer
 
-% Geometrical parameters 
-  x1 = 15 ;         % length of the body in front of the slope
-  x3 = 20 ;         % length of the body behind the slope 
-  y11=6.75;         % height of the foundation below the weak layer
-  y12=0.5;          % thickness of the weak layer
-  y13=0.75;         % height of the foundation above the weak layer
-  y21=1;            % height of the water level next to the slope
-  y22=9.25;         % difference between water levels on oposite slope sides
-  y23=2;            % height of the slope above underground water level
-  y1=y11+y12+y13;   % height of the foundation 
-  y2=y21+y22+y23;   % height of the slope
-  beta=26.6*pi/180; % slope angle
-  x2=y2/tan(beta);  % length of the slope in x-direction
+% Geometrical parameters
+x1 = 15 ;         % length of the body in front of the slope
+x3 = 20 ;         % length of the body behind the slope
+y11=6.75;         % height of the foundation below the weak layer
+y12=0.5;          % thickness of the weak layer
+y13=0.75;         % height of the foundation above the weak layer
+y21=1;            % height of the water level next to the slope
+y22=9.25;         % difference between water levels on oposite slope sides
+y23=2;            % height of the slope above underground water level
+y1=y11+y12+y13;   % height of the foundation
+y2=y21+y22+y23;   % height of the slope
+beta=26.6*pi/180; % slope angle
+x2=y2/tan(beta);  % length of the slope in x-direction
 
 % Mesh data
 h = 1/2;         % Discretization parameter
-  
+
 %% Data from the reference element
 % quadrature points and weights for volume integration
 [Xi, WF] = ASSEMBLY.quadrature_volume_2D(elem_type);
@@ -72,7 +72,11 @@ h = 1/2;         % Discretization parameter
 
 %% Creation of the uniform finite element mesh
 [coord, elem, Q, material_identifier, surf] = MESH.create_mesh_Sloan2013...
-                      (elem_type,h,x1,x2,x3,y1,y2,y11,y12,y13,y21,y22,y23);
+    (elem_type,h,x1,x2,x3,y1,y2,y11,y12,y13,y21,y22,y23);
+
+% Uncomment to reduce matrix bandwidth via Reverse Cuthill-McKee node reordering:
+% [coord, elem, surf, Q] = MESH.reorder_mesh(coord, elem, surf, Q);
+
 % number of nodes, elements and integration points + print
 n_n=size(coord,2);
 n_unknown=length(coord(Q)); % number of unknowns
@@ -91,7 +95,7 @@ fprintf('\n');
 %% Computation of porous water pressure
 
 % Hydraulic conductivity ateach integration point
-conduct0=SEEPAGE.heter_conduct(material_identifier,n_q,k); 
+conduct0=SEEPAGE.heter_conduct(material_identifier,n_q,k);
 
 % specific weight of water in kPa
 grho=9.81;
@@ -102,7 +106,7 @@ Q_w(coord(1,:)<=0.001)=0;
 Q_w(coord(1,:)>=x1+x2+x3-0.001)=0;
 Q_w(coord(2,:)>=y1+y2-0.001)=0;
 Q_w((coord(2,:)>=y1-0.001)&(coord(1,:)>=x1+x2-0.001))=0;
-Q_w((coord(2,:)>=y1-0.001)&(coord(2,:)>=-(y2/x2)*coord(1,:)+y1+y2*(1+x1/x2)-0.001))=0;  
+Q_w((coord(2,:)>=y1-0.001)&(coord(2,:)>=-(y2/x2)*coord(1,:)+y1+y2*(1+x1/x2)-0.001))=0;
 
 % Nonhomogeneous part of the pressure (problem dependent)
 pw_D=zeros(1,n_n);
@@ -110,14 +114,14 @@ x_bar=x1+(1-y21/y2)*x2;
 part1=(coord(1,:)<x_bar)&(coord(2,:)<=-(y22/x_bar)*coord(1,:)+y1+y21+y22);
 part2=coord(1,:)>=x_bar;
 pw_D(part1)=grho*((y22/x_bar)*(x_bar-coord(1,part1))+y1+y21-coord(2,part1));
-pw_D(part2)=grho*(y1+y21-coord(2,part2)); 
+pw_D(part2)=grho*(y1+y21-coord(2,part2));
 
 % Computation on the pore pressure and its gradient
 [pw, grad_p, mater_sat]=SEEPAGE.seepage_problem_2D...
-                         (coord,elem,Q_w,pw_D,grho,conduct0,HatP,DHatP1,DHatP2,WF);
+    (coord,elem,Q_w,pw_D,grho,conduct0,HatP,DHatP1,DHatP2,WF);
 
-% Saturation - a prescribed logical array indicating integration points 
-%              where the body is saturated. If gamma_sat and gamma_unsat 
+% Saturation - a prescribed logical array indicating integration points
+%              where the body is saturated. If gamma_sat and gamma_unsat
 %              are the same, set saturation=true(1,n_int). Otherwise,
 %              this logical array is derived from the phreatic surface.
 mater_sat_ext=repmat(mater_sat,n_q,1);
@@ -127,19 +131,19 @@ saturation=mater_sat_ext(:);
 
 % Fields with prescribed material properties
 fields = {'c0',      ... % Cohesion (c)
-          'phi',     ... % Friction angle (phi in degrees)
-          'psi',     ... % Dilatancy angle (psi in degrees)
-          'young',   ... % Young's modulus (E)
-          'poisson', ... % Poisson's ratio (nu)
-          'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
-          'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
+    'phi',     ... % Friction angle (phi in degrees)
+    'psi',     ... % Dilatancy angle (psi in degrees)
+    'young',   ... % Young's modulus (E)
+    'poisson', ... % Poisson's ratio (nu)
+    'gamma_sat', ... % Specific weight - saturated (gamma_sat in kN/m^3)
+    'gamma_unsat'};  % Specific weight - unsaturated (gamma_unsat in kN/m^3)
 
 % Convert properties to structured format.
 materials = cellfun(@(x) cell2struct(num2cell(x), fields, 2), num2cell(mat_props, 2), 'UniformOutput', false);
 
 % Material parameters at integration points.
 [c0, phi, psi, shear, bulk, lame, gamma] = ...
-      ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
+    ASSEMBLY.heterogenous_materials(material_identifier, saturation, n_q, materials);
 
 %% Assembling for mechanics
 
