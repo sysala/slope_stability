@@ -127,8 +127,6 @@ build_octave() {
   FCFLAGS="${COMMON_OPT_FLAGS}" \
   "${src_unpack}/configure" \
     --prefix="${OCTAVE_PREFIX}" \
-    --without-qt \
-    --without-opengl \
     --without-fltk \
     --disable-docs \
     --with-blas="-L${OPENBLAS_PREFIX}/lib -lopenblas" \
@@ -234,7 +232,7 @@ EOF
 #!/usr/bin/env bash
 set -euo pipefail
 export LD_LIBRARY_PATH="${LIBRSB_PREFIX}/lib:${OPENBLAS_PREFIX}/lib:\${LD_LIBRARY_PATH:-}"
-exec "${OCTAVE_BIN}" "\$@"
+exec "${OCTAVE_BIN}" --no-gui "\$@"
 EOF
   chmod +x "${LOCAL_WRAPPER}"
 
